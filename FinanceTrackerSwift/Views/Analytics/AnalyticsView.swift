@@ -479,3 +479,44 @@ struct NetWorthBreakdownView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
+
+// MARK: - Stat Card
+struct StatCard: View {
+    let title: String
+    let value: Double
+    let currency: String?
+    let icon: String
+    let color: Color
+    var isPercent: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .font(.title3)
+                Spacer()
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(Color.white.opacity(0.6))
+                if isPercent {
+                    Text(String(format: "%.1f%%", value))
+                        .font(.title3.bold())
+                        .foregroundColor(.white)
+                } else if let currency = currency {
+                    Text(value.formatted(currencyCode: currency))
+                        .font(.title3.bold())
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.3), lineWidth: 1))
+    }
+}

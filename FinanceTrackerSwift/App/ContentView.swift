@@ -1,12 +1,34 @@
 import SwiftUI
 
+enum AppTab: Int, Hashable, CaseIterable {
+    case dashboard = 0
+    case transactions = 1
+    case accounts = 2
+    case analytics = 3
+    case savings = 4
+}
+
+// Environment key to allow child views to switch tabs
+private struct AppTabSelectionKey: EnvironmentKey {
+    static let defaultValue: Binding<AppTab> = .constant(.dashboard)
+}
+
+extension EnvironmentValues {
+    var selectedTab: Binding<AppTab> {
+        get { self[AppTabSelectionKey.self] }
+        set { self[AppTabSelectionKey.self] = newValue }
+    }
+}
+
 struct ContentView: View {
     @Environment(AuthManager.self) private var auth
+    @State private var selectedTab: AppTab = .dashboard
 
     var body: some View {
         Group {
             if auth.isAuthenticated {
-                MainTabView()
+                MainTabView(selectedTab: $selectedTab)
+                    .environment(\.selectedTab, $selectedTab)
             } else {
                 LoginView()
             }
@@ -17,7 +39,7 @@ struct ContentView: View {
 
 // MARK: - Main Navigation
 struct MainTabView: View {
-    @Environment(AuthManager.self) private var auth
+    @Binding var selectedTab: AppTab
 
     var body: some View {
         #if os(macOS)
@@ -29,13 +51,14 @@ struct MainTabView: View {
 
     // MARK: iOS Tab View
     var iOSLayout: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 DashboardView()
             }
             .tabItem {
                 Label("Dashboard", systemImage: "chart.bar.fill")
             }
+            .tag(AppTab.dashboard)
 
             NavigationStack {
                 TransactionsView()
@@ -43,6 +66,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Transactions", systemImage: "arrow.left.arrow.right")
             }
+            .tag(AppTab.transactions)
 
             NavigationStack {
                 AccountsView()
@@ -50,6 +74,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Accounts", systemImage: "building.columns")
             }
+            .tag(AppTab.accounts)
 
             NavigationStack {
                 AnalyticsView()
@@ -57,6 +82,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Analytics", systemImage: "chart.pie")
             }
+            .tag(AppTab.analytics)
 
             NavigationStack {
                 SavingsView()
@@ -64,10 +90,10 @@ struct MainTabView: View {
             .tabItem {
                 Label("Savings", systemImage: "target")
             }
+            .tag(AppTab.savings)
         }
         .tint(Color(hex: "a78bfa"))
         .onAppear {
-            // Dark tab bar
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
             appearance.backgroundColor = UIColor(Color(hex: "161b22"))
@@ -79,11 +105,17 @@ struct MainTabView: View {
     // MARK: macOS Sidebar Layout
     var macOSLayout: some View {
         NavigationSplitView {
-            SidebarView()
+            SidebarView(selectedTab: $selectedTab)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 220)
         } detail: {
             NavigationStack {
-                DashboardView()
+                switch selectedTab {
+                case .dashboard: DashboardView()
+                case .transactions: TransactionsView()
+                case .accounts: AccountsView()
+                case .analytics: AnalyticsView()
+                case .savings: SavingsView()
+                }
             }
         }
     }
@@ -92,7 +124,7 @@ struct MainTabView: View {
 // MARK: - macOS Sidebar
 struct SidebarView: View {
     @Environment(AuthManager.self) private var auth
-    @State private var selection: SidebarItem? = .dashboard
+    @Binding var selectedTab: AppTab
 
     enum SidebarItem: String, CaseIterable {
         case dashboard = "Dashboard"
@@ -100,6 +132,16 @@ struct SidebarView: View {
         case accounts = "Accounts"
         case analytics = "Analytics"
         case savings = "Savings"
+
+        var tab: AppTab {
+            switch self {
+            case .dashboard: return .dashboard
+            case .transactions: return .transactions
+            case .accounts: return .accounts
+            case .analytics: return .analytics
+            case .savings: return .savings
+            }
+        }
 
         var icon: String {
             switch self {
@@ -140,16 +182,18 @@ struct SidebarView: View {
 
             Divider().opacity(0.2)
 
-            List(SidebarItem.allCases, id: \.self, selection: $selection) { item in
-                NavigationLink(value: item) {
-                    Label {
-                        Text(item.rawValue).foregroundColor(.primary)
-                    } icon: {
+            List(SidebarItem.allCases, id: \.self) { item in
+                Button {
+                    selectedTab = item.tab
+                } label: {
+                    HStack(spacing: 8) {
                         Image(systemName: item.icon)
                             .foregroundColor(item.color)
+                        Text(item.rawValue)
+                            .foregroundColor(.primary)
                     }
                 }
-                .listRowBackground(selection == item ? item.color.opacity(0.15) : Color.clear)
+                .listRowBackground(selectedTab == item.tab ? item.color.opacity(0.15) : Color.clear)
             }
             .listStyle(.sidebar)
 
@@ -175,15 +219,6 @@ struct SidebarView: View {
                 .buttonStyle(.plain)
             }
             .padding(16)
-        }
-        .navigationDestination(for: SidebarItem.self) { item in
-            switch item {
-            case .dashboard: DashboardView()
-            case .transactions: TransactionsView()
-            case .accounts: AccountsView()
-            case .analytics: AnalyticsView()
-            case .savings: SavingsView()
-            }
         }
     }
 }
