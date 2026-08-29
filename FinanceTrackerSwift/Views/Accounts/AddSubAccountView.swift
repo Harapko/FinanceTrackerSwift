@@ -1,22 +1,22 @@
 import SwiftUI
 
-struct AddAccountView: View {
+struct AddSubAccountView: View {
     @Environment(\.dismiss) private var dismiss
-    var editingAccount: AccountResponse? = nil
+    let parentAccountId: String
+    let parentCurrency: String
+    var editingSubAccount: SubAccountResponse? = nil
     var onSuccess: (() -> Void) = {}
 
     @State private var name = ""
-    @State private var type: AccountType = .bankAccount
+    @State private var type: SubAccountType = .checking
     @State private var currencyCode = "USD"
-    @State private var color = "#818cf8"
     @State private var description = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
 
     let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "AUD", "CHF", "BTC", "ETH", "SOL"]
-    let colorOptions = ["#818cf8", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#fb923c", "#e879f9", "#38bdf8", "#2bff00"]
 
-    var isEditing: Bool { editingAccount != nil }
+    var isEditing: Bool { editingSubAccount != nil }
 
     var body: some View {
         NavigationStack {
@@ -25,19 +25,19 @@ struct AddAccountView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Name
-                        formField("Account Name", icon: "building.columns") {
-                            TextField("e.g. My Chase Account", text: $name)
+                        // Sub-Account Name
+                        formField("Sub-Account Name", icon: "square.grid.2x2") {
+                            TextField("e.g. Emergency Savings", text: $name)
                         }
 
                         // Type
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Account Type", systemImage: "creditcard")
+                            Label("Sub-Account Type", systemImage: "creditcard")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
                             Picker("Type", selection: $type) {
-                                ForEach(AccountType.allCases, id: \.self) { t in
-                                    Label(t.displayName, systemImage: t.icon).tag(t)
+                                ForEach(SubAccountType.allCases, id: \.self) { t in
+                                    Text(t.displayName).tag(t)
                                 }
                             }
                             .pickerStyle(.menu)
@@ -74,28 +74,9 @@ struct AddAccountView: View {
                             }
                         }
 
-                        // Color
-                        VStack(alignment: .leading, spacing: 10) {
-                            Label("Accent Color", systemImage: "paintpalette")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.6))
-                            HStack(spacing: 10) {
-                                ForEach(colorOptions, id: \.self) { c in
-                                    Circle()
-                                        .fill(Color(hex: c))
-                                        .frame(width: 32, height: 32)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white, lineWidth: color.lowercased() == c.lowercased() ? 3 : 0)
-                                        )
-                                        .onTapGesture { color = c }
-                                }
-                            }
-                        }
-
                         // Description
                         formField("Description (optional)", icon: "text.alignleft") {
-                            TextField("Optional description", text: $description)
+                            TextField("Notes or purpose...", text: $description)
                         }
 
                         if let error = errorMessage {
@@ -117,7 +98,7 @@ struct AddAccountView: View {
                                 if isLoading {
                                     ProgressView().tint(.white)
                                 } else {
-                                    Text(isEditing ? "Save Changes" : "Create Account")
+                                    Text(isEditing ? "Save Changes" : "Create Sub-Account")
                                         .font(.headline)
                                         .foregroundColor(.white)
                                 }
@@ -137,7 +118,7 @@ struct AddAccountView: View {
                     .padding(20)
                 }
             }
-            .navigationTitle(isEditing ? "Edit Account" : "New Account")
+            .navigationTitle(isEditing ? "Edit Sub-Account" : "New Sub-Account")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -146,12 +127,13 @@ struct AddAccountView: View {
                 }
             }
             .onAppear {
-                if let acc = editingAccount {
-                    name = acc.name
-                    type = acc.type
-                    currencyCode = acc.currencyCode
-                    color = acc.color ?? "#818cf8"
-                    description = acc.description ?? ""
+                if let sub = editingSubAccount {
+                    name = sub.name
+                    type = sub.type
+                    currencyCode = sub.currencyCode
+                    description = sub.description ?? ""
+                } else {
+                    currencyCode = parentCurrency
                 }
             }
         }
@@ -165,24 +147,29 @@ struct AddAccountView: View {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            if let acc = editingAccount {
-                let payload = UpdateAccountPayload(
+            if let sub = editingSubAccount {
+                let payload = UpdateSubAccountPayload(
                     name: trimmedName,
                     type: type.rawValue,
                     currencyCode: currencyCode,
-                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    color: color
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description
                 )
-                let _: AccountResponse = try await AccountService.shared.updateAccount(id: acc.id, payload: payload)
+                let _: SubAccountResponse = try await AccountService.shared.updateSubAccount(
+                    accountId: parentAccountId,
+                    subAccountId: sub.id,
+                    payload: payload
+                )
             } else {
-                let payload = CreateAccountPayload(
+                let payload = CreateSubAccountPayload(
                     name: trimmedName,
                     type: type.rawValue,
                     currencyCode: currencyCode,
-                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    color: color
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description
                 )
-                let _: AccountResponse = try await AccountService.shared.createAccount(payload)
+                let _: SubAccountResponse = try await AccountService.shared.createSubAccount(
+                    accountId: parentAccountId,
+                    payload: payload
+                )
             }
             onSuccess()
             dismiss()

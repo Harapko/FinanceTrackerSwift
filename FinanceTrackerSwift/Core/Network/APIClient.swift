@@ -109,11 +109,11 @@ actor APIClient {
     func get<T: Decodable>(_ path: String, params: [String: String]? = nil) async throws -> T {
         try await request(path: path, method: "GET", params: params)
     }
-    func post<T: Decodable>(_ path: String, body: (any Encodable)? = nil) async throws -> T {
-        try await request(path: path, method: "POST", body: body)
+    func post<T: Decodable>(_ path: String, body: (any Encodable)? = nil, params: [String: String]? = nil) async throws -> T {
+        try await request(path: path, method: "POST", body: body, params: params)
     }
-    func put<T: Decodable>(_ path: String, body: (any Encodable)? = nil) async throws -> T {
-        try await request(path: path, method: "PUT", body: body)
+    func put<T: Decodable>(_ path: String, body: (any Encodable)? = nil, params: [String: String]? = nil) async throws -> T {
+        try await request(path: path, method: "PUT", body: body, params: params)
     }
     func delete(_ path: String) async throws {
         try await requestVoid(path: path, method: "DELETE")

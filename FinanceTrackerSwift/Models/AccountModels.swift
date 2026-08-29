@@ -38,6 +38,17 @@ enum SubAccountType: String, Codable, CaseIterable {
     case investment = "Investment"
     case cash = "Cash"
     case other = "Other"
+
+    var displayName: String {
+        switch self {
+        case .checking: return "Checking"
+        case .savings: return "Savings"
+        case .credit: return "Credit"
+        case .investment: return "Investment"
+        case .cash: return "Cash"
+        case .other: return "Other"
+        }
+    }
 }
 
 struct AccountResponse: Decodable, Identifiable {
@@ -82,7 +93,22 @@ struct CreateAccountPayload: Encodable {
     let color: String?
 }
 
+struct UpdateAccountPayload: Encodable {
+    let name: String
+    let type: String
+    let currencyCode: String
+    let description: String?
+    let color: String?
+}
+
 struct CreateSubAccountPayload: Encodable {
+    let name: String
+    let type: String
+    let currencyCode: String
+    let description: String?
+}
+
+struct UpdateSubAccountPayload: Encodable {
     let name: String
     let type: String
     let currencyCode: String

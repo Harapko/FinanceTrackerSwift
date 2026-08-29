@@ -16,7 +16,7 @@ struct AccountService {
         try await APIClient.shared.post("/api/accounts", body: payload)
     }
 
-    func updateAccount(id: String, payload: CreateAccountPayload) async throws -> AccountResponse {
+    func updateAccount(id: String, payload: UpdateAccountPayload) async throws -> AccountResponse {
         try await APIClient.shared.put("/api/accounts/\(id)", body: payload)
     }
 
@@ -26,6 +26,10 @@ struct AccountService {
 
     func createSubAccount(accountId: String, payload: CreateSubAccountPayload) async throws -> SubAccountResponse {
         try await APIClient.shared.post("/api/accounts/\(accountId)/subaccounts", body: payload)
+    }
+
+    func updateSubAccount(accountId: String, subAccountId: String, payload: UpdateSubAccountPayload) async throws -> SubAccountResponse {
+        try await APIClient.shared.put("/api/accounts/\(accountId)/subaccounts/\(subAccountId)", body: payload)
     }
 
     func deleteSubAccount(accountId: String, subAccountId: String) async throws {
