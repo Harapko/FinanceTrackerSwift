@@ -371,6 +371,7 @@
 		A10000000000000000000000A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				ASS_CATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASS_CATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -399,6 +400,7 @@
 		A10000000000000000000000B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				ASS_CATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASS_CATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
