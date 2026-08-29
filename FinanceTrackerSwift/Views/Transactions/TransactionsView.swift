@@ -1,5 +1,15 @@
 import SwiftUI
 
+struct TransactionDateGroup: Identifiable {
+    let dateString: String
+    let formattedDate: String
+    let transactions: [TransactionResponse]
+    let totalExpense: Double
+    let totalIncome: Double
+
+    var id: String { dateString }
+}
+
 @Observable
 class TransactionsViewModel {
     var transactions: [TransactionResponse] = []
@@ -16,6 +26,58 @@ class TransactionsViewModel {
     var fromDate: String = ""
     var toDate: String = ""
 
+    var groupedTransactions: [TransactionDateGroup] {
+        let grouped = Dictionary(grouping: transactions, by: { $0.date })
+        // Sort date keys descending (newest dates first)
+        let sortedDates = grouped.keys.sorted(by: >)
+
+        return sortedDates.map { dateKey in
+            let rawList = grouped[dateKey] ?? []
+            // Sort items on the same day by CreatedAtUtc descending, or time descending
+            let sortedItems = rawList.sorted { a, b in
+                if let aCreated = a.createdAtUtc, let bCreated = b.createdAtUtc, aCreated != bCreated {
+                    return aCreated > bCreated
+                }
+                if let aTime = a.time, let bTime = b.time, aTime != bTime {
+                    return aTime > bTime
+                }
+                return a.id > b.id
+            }
+
+            let exp = sortedItems.filter { $0.type == .expense }.reduce(0.0) { $0 + $1.amount }
+            let inc = sortedItems.filter { $0.type == .income }.reduce(0.0) { $0 + $1.amount }
+
+            return TransactionDateGroup(
+                dateString: dateKey,
+                formattedDate: formatSectionDate(dateKey),
+                transactions: sortedItems,
+                totalExpense: exp,
+                totalIncome: inc
+            )
+        }
+    }
+
+    private func formatSectionDate(_ dateStr: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateStr) else { return dateStr }
+
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d"
+            return "Today • \(displayFormatter.string(from: date))"
+        } else if calendar.isDateInYesterday(date) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d"
+            return "Yesterday • \(displayFormatter.string(from: date))"
+        } else {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "EEEE, MMM d, yyyy"
+            return displayFormatter.string(from: date)
+        }
+    }
+
     func load(page: Int = 1, isManualRefresh: Bool = false) async {
         if isManualRefresh {
             isRefreshing = true
@@ -31,7 +93,7 @@ class TransactionsViewModel {
         do {
             let result = try await TransactionService.shared.getTransactions(
                 page: page,
-                pageSize: 20,
+                pageSize: 30,
                 type: selectedType.isEmpty ? nil : selectedType,
                 search: searchText.isEmpty ? nil : searchText,
                 fromDate: fromDate.isEmpty ? nil : fromDate,
@@ -43,7 +105,7 @@ class TransactionsViewModel {
                 transactions.append(contentsOf: result.items)
             }
             totalCount = result.totalCount ?? result.items.count
-            let ps = result.pageSize ?? 20
+            let ps = result.pageSize ?? 30
             totalPages = ps > 0 ? ((totalCount + ps - 1) / ps) : 1
         } catch {
             errorMessage = error.localizedDescription
@@ -96,8 +158,12 @@ struct TransactionsView: View {
                     }
                     Spacer()
                     HStack(spacing: 10) {
-                        Button { showFilters.toggle() } label: {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showFilters.toggle()
+                            }
+                        } label: {
+                            Image(systemName: showFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                                 .foregroundColor(Color(hex: "a78bfa"))
                                 .font(.title3)
                         }
@@ -150,24 +216,62 @@ struct TransactionsView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "arrow.left.arrow.right.square")
                             .font(.system(size: 48)).foregroundColor(Color.white.opacity(0.2))
-                        Text("No transactions").font(.headline).foregroundColor(Color.white.opacity(0.4))
+                        Text("No transactions found").font(.headline).foregroundColor(Color.white.opacity(0.4))
+                        if !viewModel.fromDate.isEmpty || !viewModel.toDate.isEmpty || !viewModel.searchText.isEmpty || !viewModel.selectedType.isEmpty {
+                            Button("Reset Filters") {
+                                viewModel.reset()
+                            }
+                            .font(.caption.bold())
+                            .foregroundColor(Color(hex: "a78bfa"))
+                        }
                     }
                     .padding(.vertical, 60)
                 } else {
-                    LazyVStack(spacing: 0) {
-                        ForEach(viewModel.transactions) { tx in
-                            SwipeableTransactionRow(transaction: tx) {
-                                transactionToDelete = tx
-                                showDeleteConfirmation = true
-                            }
+                    // Grouped Transactions by Date
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.groupedTransactions) { group in
+                            VStack(alignment: .leading, spacing: 8) {
+                                // Section Header
+                                HStack {
+                                    Text(group.formattedDate.uppercased())
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(Color.white.opacity(0.5))
 
-                            if tx.id != viewModel.transactions.last?.id {
-                                Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 16)
+                                    Spacer()
+
+                                    HStack(spacing: 8) {
+                                        if group.totalIncome > 0 {
+                                            Text("+\(group.totalIncome.formatted(currencyCode: group.transactions.first?.currencyCode ?? "USD"))")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundColor(Color(hex: "34d399"))
+                                        }
+                                        if group.totalExpense > 0 {
+                                            Text("-\(group.totalExpense.formatted(currencyCode: group.transactions.first?.currencyCode ?? "USD"))")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundColor(Color(hex: "f87171"))
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+
+                                // Transactions list in group
+                                VStack(spacing: 0) {
+                                    ForEach(group.transactions) { tx in
+                                        SwipeableTransactionRow(transaction: tx) {
+                                            transactionToDelete = tx
+                                            showDeleteConfirmation = true
+                                        }
+
+                                        if tx.id != group.transactions.last?.id {
+                                            Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 16)
+                                        }
+                                    }
+                                }
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 18))
                             }
                         }
                     }
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
 
                     // Load More
                     if viewModel.currentPage < viewModel.totalPages {

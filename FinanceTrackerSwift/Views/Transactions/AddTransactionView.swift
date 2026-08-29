@@ -562,6 +562,10 @@ struct AddTransactionView: View {
         errorMessage = nil
         defer { isLoading = false }
 
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm:ss"
+        let currentTimeString = timeFormatter.string(from: Date())
+
         let payload = CreateTransactionPayload(
             accountId: targetAccountId,
             subAccountId: nil,
@@ -571,7 +575,7 @@ struct AddTransactionView: View {
             currencyCode: currencyCode,
             description: comment.trimmingCharacters(in: .whitespaces).isEmpty ? nil : comment,
             date: selectedDateString,
-            time: "12:00",
+            time: currentTimeString,
             payee: nil
         )
 
