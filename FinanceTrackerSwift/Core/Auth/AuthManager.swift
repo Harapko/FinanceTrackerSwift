@@ -11,7 +11,7 @@ final class AuthManager {
     var errorMessage: String?
 
     private init() {
-        // Restore session ONLY if a non-empty token and valid user exist
+        // Initial quick load
         let token = KeychainHelper.shared.read(key: "finance_tracker_token")
         let userData = KeychainHelper.shared.read(key: "finance_tracker_user")
 
@@ -21,9 +21,32 @@ final class AuthManager {
            let user = try? JSONDecoder().decode(UserResponse.self, from: data) {
             currentUser = user
             isAuthenticated = true
+            // Validate asynchronously with the active backend
+            Task { await validateSession() }
         } else {
             currentUser = nil
             isAuthenticated = false
+        }
+    }
+
+    // MARK: - Validate Session against active server
+    func validateSession() async {
+        guard let token = KeychainHelper.shared.read(key: "finance_tracker_token"), !token.isEmpty else {
+            logout()
+            return
+        }
+
+        do {
+            let user: UserResponse = try await APIClient.shared.get("/api/auth/me")
+            await MainActor.run {
+                self.currentUser = user
+                self.isAuthenticated = true
+            }
+        } catch {
+            // Token is invalid on this server (e.g. from local DB when connecting to Render cloud)
+            await MainActor.run {
+                self.logout()
+            }
         }
     }
 
