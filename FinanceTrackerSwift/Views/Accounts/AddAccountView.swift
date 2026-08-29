@@ -28,6 +28,10 @@ struct AddAccountView: View {
 
     var isEditing: Bool { editingAccount != nil }
 
+    var selectedColor: Color {
+        Color(hex: color)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -35,117 +39,200 @@ struct AddAccountView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Name
-                        formField("Account Name", icon: "building.columns") {
+                        // 1. Account Name
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Account Name", systemImage: "building.columns.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
                             TextField("e.g. My Chase Account, Freedom Finance", text: $name)
+                                .textFieldStyle(.plain)
+                                .padding(14)
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
+                                .foregroundColor(.white)
                         }
 
-                        // Type
+                        // 2. Account Type (Full-Width Dropdown Card)
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Account Type", systemImage: "creditcard")
+                            Label("Account Type", systemImage: "creditcard.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
-                            Picker("Type", selection: $type) {
-                                ForEach(AccountType.allCases, id: \.self) { t in
-                                    Label(t.displayName, systemImage: t.icon).tag(t)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .padding(12)
-                            .background(Color.white.opacity(0.07))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
 
-                        // Currency
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Currency", systemImage: "dollarsign.circle")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.6))
                             Menu {
-                                ForEach(currencies, id: \.self) { c in
-                                    Button(c) { currencyCode = c }
+                                ForEach(AccountType.allCases, id: \.self) { t in
+                                    Button {
+                                        type = t
+                                    } label: {
+                                        HStack {
+                                            Label(t.displayName, systemImage: t.icon)
+                                            if type == t {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
                                 }
                             } label: {
-                                HStack {
-                                    Text(currencyCode)
+                                HStack(spacing: 12) {
+                                    Image(systemName: type.icon)
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(selectedColor)
+                                        .frame(width: 28)
+
+                                    Text(type.displayName)
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundColor(.white)
-                                        .fixedSize()
+
                                     Spacer()
+
                                     Image(systemName: "chevron.up.chevron.down")
-                                        .font(.caption)
+                                        .font(.caption.bold())
                                         .foregroundColor(Color(hex: "a78bfa"))
                                 }
                                 .padding(14)
-                                .background(Color.white.opacity(0.07))
+                                .background(Color.white.opacity(0.05))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
                             }
                         }
 
-                        // Color
-                        VStack(alignment: .leading, spacing: 10) {
-                            Label("Accent Color", systemImage: "paintpalette")
+                        // 3. Currency (Full-Width Dropdown Card)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Currency", systemImage: "dollarsign.circle.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
-                            HStack(spacing: 10) {
-                                ForEach(colorOptions, id: \.self) { c in
-                                    Circle()
-                                        .fill(Color(hex: c))
-                                        .frame(width: 32, height: 32)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white, lineWidth: color.lowercased() == c.lowercased() ? 3 : 0)
-                                        )
-                                        .onTapGesture { color = c }
+
+                            Menu {
+                                ForEach(currencies, id: \.self) { c in
+                                    Button {
+                                        currencyCode = c
+                                    } label: {
+                                        HStack {
+                                            Text(c)
+                                            if currencyCode == c {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
                                 }
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Text(currencyCode)
+                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .foregroundColor(Color(hex: "34d399"))
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.caption.bold())
+                                        .foregroundColor(Color(hex: "a78bfa"))
+                                }
+                                .padding(14)
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
                             }
                         }
 
-                        // Description
-                        formField("Description (optional)", icon: "text.alignleft") {
+                        // 4. Accent Color Ribbon
+                        VStack(alignment: .leading, spacing: 10) {
+                            Label("Accent Color", systemImage: "paintpalette.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(colorOptions, id: \.self) { c in
+                                        let isSelected = color.lowercased() == c.lowercased()
+                                        Circle()
+                                            .fill(Color(hex: c))
+                                            .frame(width: 36, height: 36)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: isSelected ? 3 : 0)
+                                            )
+                                            .shadow(color: isSelected ? Color(hex: c).opacity(0.6) : Color.clear, radius: 6)
+                                            .scaleEffect(isSelected ? 1.15 : 1.0)
+                                            .animation(.spring(response: 0.25), value: isSelected)
+                                            .onTapGesture { color = c }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 6)
+                            }
+                        }
+
+                        // 5. Description (Optional)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Description (optional)", systemImage: "text.alignleft")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+
                             TextField("Notes or description...", text: $description)
+                                .textFieldStyle(.plain)
+                                .padding(14)
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
+                                .foregroundColor(.white)
                         }
 
+                        // Error Banner
                         if let error = errorMessage {
-                            HStack {
+                            HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                Text(error).font(.caption)
+                                    .foregroundColor(Color(hex: "f87171"))
+                                    .font(.subheadline)
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundColor(Color(hex: "f87171"))
+                                    .multilineTextAlignment(.leading)
                             }
-                            .foregroundColor(Color(hex: "f87171"))
-                            .padding(12)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color(hex: "f87171").opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "f87171").opacity(0.3), lineWidth: 1))
                         }
-
-                        // Submit
-                        Button {
-                            Task { await save() }
-                        } label: {
-                            Group {
-                                if isLoading {
-                                    ProgressView().tint(.white)
-                                } else {
-                                    Text(isEditing ? "Save Changes" : "Create Account")
-                                        .font(.headline.bold())
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(16)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                        }
-                        .disabled(isLoading || name.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                     .padding(20)
+                    .padding(.bottom, 80)
                 }
+            }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 0) {
+                    Divider().background(Color.white.opacity(0.06))
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        Group {
+                            if isLoading {
+                                ProgressView().tint(.white)
+                            } else {
+                                HStack(spacing: 8) {
+                                    Image(systemName: isEditing ? "checkmark.circle.fill" : "plus.circle.fill")
+                                    Text(isEditing ? "Save Changes" : "Create Account")
+                                        .font(.headline.bold())
+                                }
+                                .foregroundColor(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(16)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color(hex: "818cf8").opacity(0.35), radius: 10, x: 0, y: 5)
+                    }
+                    .disabled(isLoading || name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                }
+                .background(Color(hex: "0d1117").opacity(0.95))
             }
             .navigationTitle(isEditing ? "Edit Account" : "New Account")
             .navigationBarTitleDisplayMode(.inline)
@@ -189,24 +276,6 @@ struct AddAccountView: View {
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
-
-    @ViewBuilder
-    private func formField<Content: View>(
-        _ label: String, icon: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(label, systemImage: icon)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(Color.white.opacity(0.6))
-            content()
-                .textFieldStyle(.plain)
-                .padding(14)
-                .background(Color.white.opacity(0.07))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundColor(.white)
         }
     }
 }
