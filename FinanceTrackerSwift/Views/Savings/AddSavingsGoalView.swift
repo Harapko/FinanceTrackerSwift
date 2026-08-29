@@ -18,6 +18,7 @@ struct AddSavingsGoalView: View {
     let iconOptions = ["🎯", "🏠", "✈️", "🚗", "📚", "💪", "🎸", "💍", "🌴", "💻", "🪙", "📈"]
     let colorOptions = ["#818cf8", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#fb923c", "#e879f9"]
     let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "AUD", "CHF"]
+    let targetPresets = ["500", "1000", "2500", "5000", "10000", "25000"]
 
     var isEditing: Bool { editingGoal != nil }
     var title: String { isEditing ? "Edit Goal" : "New Savings Goal" }
@@ -55,18 +56,48 @@ struct AddSavingsGoalView: View {
                                     Circle()
                                         .fill(Color(hex: c))
                                         .frame(width: 30, height: 30)
-                                        .overlay(Circle().stroke(Color.white, lineWidth: color == c ? 3 : 0))
+                                        .overlay(Circle().stroke(Color.white, lineWidth: color.lowercased() == c.lowercased() ? 3 : 0))
                                         .onTapGesture { color = c }
                                 }
                             }
                         }
 
-                        formField("Goal Name", icon: "target") { TextField("e.g. Emergency Fund", text: $name) }
-
-                        formField("Target Amount", icon: "dollarsign.circle") {
-                            TextField("0.00", text: $targetAmount).keyboardType(.decimalPad)
+                        // Name
+                        formField("Goal Name", icon: "target") {
+                            TextField("e.g. Emergency Fund, New Car...", text: $name)
                         }
 
+                        // Target Amount
+                        VStack(alignment: .leading, spacing: 8) {
+                            formField("Target Amount (optional)", icon: "dollarsign.circle") {
+                                TextField("0.00 (or leave blank for open goal)", text: $targetAmount)
+                                    .keyboardType(.decimalPad)
+                            }
+
+                            // Presets
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    Text("Preset:")
+                                        .font(.caption2)
+                                        .foregroundColor(Color.white.opacity(0.4))
+                                    ForEach(targetPresets, id: \.self) { p in
+                                        Button {
+                                            targetAmount = p
+                                        } label: {
+                                            Text("\(p) \(currencyCode)")
+                                                .font(.caption2.bold())
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 3)
+                                                .background(targetAmount == p ? Color(hex: "818cf8").opacity(0.3) : Color.white.opacity(0.06))
+                                                .foregroundColor(targetAmount == p ? Color(hex: "a78bfa") : Color.white.opacity(0.7))
+                                                .clipShape(Capsule())
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Currency
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Currency", systemImage: "dollarsign.circle").font(.caption.weight(.semibold)).foregroundColor(Color.white.opacity(0.6))
                             Picker("Currency", selection: $currencyCode) {
@@ -74,29 +105,36 @@ struct AddSavingsGoalView: View {
                             }
                             .pickerStyle(.menu).padding(12).background(Color.white.opacity(0.07))
                             .clipShape(RoundedRectangle(cornerRadius: 12)).foregroundColor(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
-                        formField("Deadline (YYYY-MM-DD)", icon: "calendar") { TextField("Optional", text: $deadline) }
-                        formField("Description", icon: "text.alignleft") { TextField("Optional", text: $description) }
+                        formField("Deadline (YYYY-MM-DD)", icon: "calendar") { TextField("Optional target date", text: $deadline) }
+                        formField("Description", icon: "text.alignleft") { TextField("Optional description", text: $description) }
 
                         if let error = errorMessage {
-                            Text(error).font(.caption).foregroundColor(Color(hex: "f87171"))
-                                .padding(12).background(Color(hex: "f87171").opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                Text(error).font(.caption)
+                            }
+                            .foregroundColor(Color(hex: "f87171"))
+                            .padding(12)
+                            .background(Color(hex: "f87171").opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
 
+                        // Create / Save Button
                         Button {
                             Task { await save() }
                         } label: {
                             Group {
                                 if isLoading { ProgressView().tint(.white) }
-                                else { Text(isEditing ? "Save Changes" : "Create Goal").font(.headline).foregroundColor(.white) }
+                                else { Text(isEditing ? "Save Changes" : "Create Goal").font(.headline.bold()).foregroundColor(.white) }
                             }
                             .frame(maxWidth: .infinity).padding(16)
                             .background(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")], startPoint: .leading, endPoint: .trailing))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
-                        .disabled(isLoading || name.isEmpty || targetAmount.isEmpty)
+                        .disabled(isLoading || name.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                     .padding(20)
                 }
@@ -112,7 +150,7 @@ struct AddSavingsGoalView: View {
         .onAppear {
             if let g = editingGoal {
                 name = g.name
-                targetAmount = String(g.targetAmount)
+                targetAmount = g.targetAmount > 0 ? String(format: "%.0f", g.targetAmount) : ""
                 currencyCode = g.currencyCode
                 deadline = g.deadline ?? ""
                 description = g.description ?? ""
@@ -123,22 +161,49 @@ struct AddSavingsGoalView: View {
     }
 
     private func save() async {
-        guard let amount = Double(targetAmount) else { return }
-        isLoading = true; errorMessage = nil; defer { isLoading = false }
+        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmedName.isEmpty else { return }
+
+        let amount = Double(targetAmount) ?? 0.0
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
         do {
             if let g = editingGoal {
-                let payload = UpdateSavingsGoalPayload(name: name, targetAmount: amount, currencyCode: currencyCode,
-                    deadline: deadline.isEmpty ? nil : deadline, description: description.isEmpty ? nil : description,
-                    icon: icon, color: color, accountId: nil, subAccountId: nil, instrumentId: nil)
+                let payload = UpdateSavingsGoalPayload(
+                    name: trimmedName,
+                    targetAmount: amount,
+                    currencyCode: currencyCode,
+                    deadline: deadline.trimmingCharacters(in: .whitespaces).isEmpty ? nil : deadline,
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
+                    icon: icon,
+                    color: color,
+                    accountId: nil,
+                    subAccountId: nil,
+                    instrumentId: nil
+                )
                 let _: SavingsGoalResponse = try await SavingsGoalService.shared.updateGoal(id: g.id, payload: payload)
             } else {
-                let payload = CreateSavingsGoalPayload(name: name, targetAmount: amount, currencyCode: currencyCode,
-                    deadline: deadline.isEmpty ? nil : deadline, description: description.isEmpty ? nil : description,
-                    icon: icon, color: color, accountId: nil, subAccountId: nil, instrumentId: nil)
+                let payload = CreateSavingsGoalPayload(
+                    name: trimmedName,
+                    targetAmount: amount,
+                    currencyCode: currencyCode,
+                    deadline: deadline.trimmingCharacters(in: .whitespaces).isEmpty ? nil : deadline,
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
+                    icon: icon,
+                    color: color,
+                    accountId: nil,
+                    subAccountId: nil,
+                    instrumentId: nil
+                )
                 let _: SavingsGoalResponse = try await SavingsGoalService.shared.createGoal(payload)
             }
-            onSuccess(); dismiss()
-        } catch { errorMessage = error.localizedDescription }
+            onSuccess()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     @ViewBuilder
