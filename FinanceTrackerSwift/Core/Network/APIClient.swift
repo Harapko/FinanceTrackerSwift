@@ -14,7 +14,7 @@ enum APIError: LocalizedError {
         case .httpError(_, let msg): return msg
         case .decodingError(let e): return "Decoding error: \(e.localizedDescription)"
         case .noData: return "No data received"
-        case .unauthorized: return "Unauthorized — please log in again"
+        case .unauthorized: return "Your session has expired. Please log in again."
         }
     }
 }
@@ -61,7 +61,7 @@ actor APIClient {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = KeychainHelper.shared.read(key: "finance_tracker_token") {
+        if let token = KeychainHelper.shared.read(key: "finance_tracker_token"), !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
@@ -72,7 +72,12 @@ actor APIClient {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.noData }
 
-        if http.statusCode == 401 { throw APIError.unauthorized }
+        if http.statusCode == 401 {
+            Task { @MainActor in
+                AuthManager.shared.logout()
+            }
+            throw APIError.unauthorized
+        }
 
         guard (200..<300).contains(http.statusCode) else {
             let message = extractErrorMessage(from: data, status: http.statusCode)
@@ -96,15 +101,21 @@ actor APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = KeychainHelper.shared.read(key: "finance_tracker_token") {
+        if let token = KeychainHelper.shared.read(key: "finance_tracker_token"), !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         if let body = body { request.httpBody = try JSONEncoder().encode(body) }
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.noData }
-        if http.statusCode == 401 { throw APIError.unauthorized }
+        if http.statusCode == 401 {
+            Task { @MainActor in
+                AuthManager.shared.logout()
+            }
+            throw APIError.unauthorized
+        }
         guard (200..<300).contains(http.statusCode) else {
-            throw APIError.httpError(statusCode: http.statusCode, message: "Request failed with status \(http.statusCode)")
+            let message = extractErrorMessage(from: data, status: http.statusCode)
+            throw APIError.httpError(statusCode: http.statusCode, message: message)
         }
     }
 
@@ -125,9 +136,9 @@ actor APIClient {
     // MARK: Error parsing
     private func extractErrorMessage(from data: Data, status: Int) -> String {
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            if let detail = json["detail"] as? String { return detail }
-            if let message = json["message"] as? String { return message }
-            if let title = json["title"] as? String { return title }
+            if let detail = json["detail"] as? String, !detail.isEmpty { return detail }
+            if let message = json["message"] as? String, !message.isEmpty { return message }
+            if let title = json["title"] as? String, !title.isEmpty { return title }
             if let errors = json["errors"] as? [String: Any] {
                 let messages = errors.values.compactMap { val -> String? in
                     if let arr = val as? [String] { return arr.joined(separator: ", ") }
@@ -135,6 +146,9 @@ actor APIClient {
                 }
                 if !messages.isEmpty { return messages.joined(separator: ". ") }
             }
+        }
+        if let text = String(data: data, encoding: .utf8), !text.isEmpty {
+            return text
         }
         return "Request failed with status \(status)"
     }
