@@ -59,17 +59,17 @@ class TransactionsViewModel {
             try await TransactionService.shared.deleteTransaction(id: id)
         } catch {
             errorMessage = error.localizedDescription
-            await load(page: 1)
+            await load(page: 1, isManualRefresh: true)
         }
     }
 
     func applyFilters() async {
-        await load(page: 1)
+        await load(page: 1, isManualRefresh: true)
     }
 
     func reset() {
         searchText = ""; selectedType = ""; fromDate = ""; toDate = ""
-        Task { await load(page: 1) }
+        Task { await load(page: 1, isManualRefresh: true) }
     }
 }
 
@@ -193,9 +193,11 @@ struct TransactionsView: View {
             await viewModel.load(page: 1, isManualRefresh: true)
         }
         .sheet(isPresented: $showAddTransaction, onDismiss: {
-            Task { await viewModel.load(page: 1) }
+            Task { await viewModel.load(page: 1, isManualRefresh: true) }
         }) {
-            AddTransactionView(onSuccess: {})
+            AddTransactionView {
+                Task { await viewModel.load(page: 1, isManualRefresh: true) }
+            }
         }
         .sheet(isPresented: $showAddCategory) {
             AddCategoryView()

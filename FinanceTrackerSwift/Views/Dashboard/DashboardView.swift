@@ -162,9 +162,11 @@ struct DashboardView: View {
             await viewModel.load(currencyCode: currencyCode, isManualRefresh: true)
         }
         .sheet(isPresented: $showAddTransaction, onDismiss: {
-            Task { await viewModel.load(currencyCode: currencyCode) }
+            Task { await viewModel.load(currencyCode: currencyCode, isManualRefresh: true) }
         }) {
-            AddTransactionView(onSuccess: {})
+            AddTransactionView {
+                Task { await viewModel.load(currencyCode: currencyCode, isManualRefresh: true) }
+            }
         }
         .sheet(isPresented: $showProfileSheet) {
             UserProfileSheet()

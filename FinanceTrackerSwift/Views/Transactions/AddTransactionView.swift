@@ -102,6 +102,27 @@ struct AddTransactionView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 10)
 
+                        // Error Banner if present
+                        if let error = errorMessage {
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.subheadline)
+                                Text(error)
+                                    .font(.caption)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .foregroundColor(Color(hex: "f87171"))
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(hex: "f87171").opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "f87171").opacity(0.3), lineWidth: 1)
+                            )
+                            .padding(.horizontal, 20)
+                        }
+
                         // 2. Hero Amount Input Card
                         VStack(spacing: 8) {
                             Text(transactionType == .expense ? "Amount to Spend" : "Amount to Receive")
@@ -341,18 +362,6 @@ struct AddTransactionView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06), lineWidth: 1))
                                 .padding(.horizontal, 20)
                         }
-
-                        if let error = errorMessage {
-                            HStack {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                Text(error).font(.caption)
-                            }
-                            .foregroundColor(Color(hex: "f87171"))
-                            .padding(12)
-                            .background(Color(hex: "f87171").opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .padding(.horizontal, 20)
-                        }
                     }
                     .padding(.bottom, 100)
                 }
@@ -451,7 +460,9 @@ struct AddTransactionView: View {
                     }
                     categories = try await CategoryService.shared.getCategories()
                     updateSelectedCategoryForCurrentType()
-                } catch {}
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
             }
         }
     }
@@ -534,6 +545,19 @@ struct AddTransactionView: View {
             return
         }
 
+        var targetCategoryId = selectedCategoryId
+        if targetCategoryId.isEmpty {
+            targetCategoryId = filteredCategories.first?.id ?? categories.first?.id ?? ""
+            if !targetCategoryId.isEmpty {
+                selectedCategoryId = targetCategoryId
+            }
+        }
+
+        guard !targetCategoryId.isEmpty else {
+            errorMessage = "Please select or create a category first."
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -541,7 +565,7 @@ struct AddTransactionView: View {
         let payload = CreateTransactionPayload(
             accountId: targetAccountId,
             subAccountId: nil,
-            categoryId: selectedCategoryId.isEmpty ? nil : selectedCategoryId,
+            categoryId: targetCategoryId,
             type: transactionType.rawValue,
             amount: amt,
             currencyCode: currencyCode,
