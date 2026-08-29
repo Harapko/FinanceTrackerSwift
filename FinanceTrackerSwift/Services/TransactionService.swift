@@ -24,6 +24,10 @@ struct TransactionService {
         try await APIClient.shared.post("/api/transactions", body: payload)
     }
 
+    func createTransfer(_ payload: CreateTransferPayload) async throws -> TransactionResponse {
+        try await APIClient.shared.post("/api/transactions/transfer", body: payload)
+    }
+
     func deleteTransaction(id: String) async throws {
         try await APIClient.shared.delete("/api/transactions/\(id)")
     }

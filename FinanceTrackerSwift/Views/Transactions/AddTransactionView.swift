@@ -2,13 +2,20 @@ import SwiftUI
 
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
+    var initialType: TransactionType = .expense
     var onSuccess: () -> Void = {}
 
     @State private var transactionType: TransactionType = .expense
     @State private var amount: String = ""
     @State private var currencyCode: String = "USD"
     @State private var selectedAccountId: String = ""
+    @State private var selectedSubAccountId: String = ""
     @State private var selectedCategoryId: String = ""
+
+    // Transfer specific
+    @State private var destAccountId: String = ""
+    @State private var destSubAccountId: String = ""
+
     @State private var selectedDateOption: Int = 0 // 0: today, 1: yesterday, 2: two days ago, 3: custom
     @State private var customDate: Date = Date()
     @State private var showDatePicker = false
@@ -37,6 +44,18 @@ struct AddTransactionView: View {
         accounts.first { $0.id == selectedAccountId }
     }
 
+    var selectedDestAccount: AccountResponse? {
+        accounts.first { $0.id == destAccountId }
+    }
+
+    var sourceSubAccounts: [SubAccountResponse] {
+        selectedAccount?.subAccountsList ?? []
+    }
+
+    var destSubAccounts: [SubAccountResponse] {
+        selectedDestAccount?.subAccountsList ?? []
+    }
+
     var selectedDateString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -60,7 +79,11 @@ struct AddTransactionView: View {
     }
 
     var themeColor: Color {
-        transactionType == .expense ? Color(hex: "f87171") : Color(hex: "34d399")
+        switch transactionType {
+        case .expense: return Color(hex: "f87171")
+        case .income: return Color(hex: "34d399")
+        case .transfer: return Color(hex: "818cf8")
+        }
     }
 
     var body: some View {
@@ -70,7 +93,7 @@ struct AddTransactionView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // 1. Sleek Expense / Income Segmented Control
+                        // 1. Sleek 3-Way Segmented Control
                         HStack(spacing: 0) {
                             tabPill(
                                 title: "EXPENSE",
@@ -93,6 +116,18 @@ struct AddTransactionView: View {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                     transactionType = .income
                                     updateSelectedCategoryForCurrentType()
+                                }
+                            }
+
+                            tabPill(
+                                title: "TRANSFER",
+                                icon: "arrow.left.arrow.right.circle.fill",
+                                isSelected: transactionType == .transfer,
+                                activeColor: Color(hex: "818cf8")
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                    transactionType = .transfer
+                                    ensureDestAccountDifferent()
                                 }
                             }
                         }
@@ -125,13 +160,13 @@ struct AddTransactionView: View {
 
                         // 2. Hero Amount Input Card
                         VStack(spacing: 8) {
-                            Text(transactionType == .expense ? "Amount to Spend" : "Amount to Receive")
+                            Text(amountTitle)
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.5))
 
                             HStack(alignment: .center, spacing: 8) {
-                                Text(transactionType == .expense ? "-" : "+")
-                                    .font(.system(size: 36, weight: .bold))
+                                Text(amountSymbol)
+                                    .font(.system(size: 32, weight: .bold))
                                     .foregroundColor(themeColor)
 
                                 TextField("0.00", text: $amount)
@@ -180,143 +215,16 @@ struct AddTransactionView: View {
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(themeColor.opacity(0.25), lineWidth: 1))
                         .padding(.horizontal, 20)
 
-                        // 3. Account Selector
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Target Account", systemImage: "building.columns.fill")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.6))
-                                .padding(.horizontal, 20)
-
-                            Menu {
-                                ForEach(accounts) { acc in
-                                    Button {
-                                        selectedAccountId = acc.id
-                                        currencyCode = acc.currencyCode
-                                    } label: {
-                                        HStack {
-                                            Text("\(acc.name) (\(acc.currencyCode))")
-                                            if selectedAccountId == acc.id {
-                                                Image(systemName: "checkmark")
-                                            }
-                                        }
-                                    }
-                                }
-                            } label: {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color(hex: selectedAccount?.color ?? "818cf8").opacity(0.2))
-                                            .frame(width: 38, height: 38)
-                                        Image(systemName: selectedAccount?.type.icon ?? "building.columns")
-                                            .font(.caption.bold())
-                                            .foregroundColor(Color(hex: selectedAccount?.color ?? "818cf8"))
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(selectedAccount?.name ?? (accounts.first?.name ?? "Select Account"))
-                                            .font(.subheadline.bold())
-                                            .foregroundColor(.white)
-                                        Text("Balance: \(selectedAccount?.totalValue.formatted(currencyCode: selectedAccount?.currencyCode ?? currencyCode) ?? "0.00")")
-                                            .font(.caption2)
-                                            .foregroundColor(Color.white.opacity(0.5))
-                                    }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.up.chevron.down")
-                                        .font(.caption.bold())
-                                        .foregroundColor(Color(hex: "a78bfa"))
-                                }
-                                .padding(14)
-                                .background(Color.white.opacity(0.04))
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.06), lineWidth: 1))
-                                .padding(.horizontal, 20)
-                            }
+                        // 3. Accounts Section (Different for Transfer vs Standard)
+                        if transactionType == .transfer {
+                            transferAccountsCard
+                        } else {
+                            standardAccountSelector
                         }
 
-                        // 4. Dynamic Categories Grid & Quick Creator
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Label("Category", systemImage: "square.grid.2x2.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Spacer()
-                                Button {
-                                    showAddCategory = true
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "plus.circle.fill")
-                                        Text("New Category")
-                                    }
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color(hex: "a78bfa"))
-                                }
-                            }
-                            .padding(.horizontal, 20)
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    // Add Category quick pill
-                                    Button {
-                                        showAddCategory = true
-                                    } label: {
-                                        VStack(spacing: 8) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(Color(hex: "a78bfa").opacity(0.12))
-                                                    .frame(width: 52, height: 52)
-                                                    .overlay(
-                                                        Circle()
-                                                            .stroke(Color(hex: "a78bfa").opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                                    )
-
-                                                Image(systemName: "plus")
-                                                    .font(.system(size: 18, weight: .bold))
-                                                    .foregroundColor(Color(hex: "a78bfa"))
-                                            }
-
-                                            Text("Add")
-                                                .font(.system(size: 11, weight: .medium))
-                                                .foregroundColor(Color(hex: "a78bfa"))
-                                                .lineLimit(1)
-                                        }
-                                        .frame(width: 64)
-                                    }
-
-                                    ForEach(filteredCategories) { cat in
-                                        let isSelected = selectedCategoryId == cat.id
-                                        Button {
-                                            selectedCategoryId = cat.id
-                                        } label: {
-                                            VStack(spacing: 8) {
-                                                ZStack {
-                                                    Circle()
-                                                        .fill(Color(hex: cat.displayColor).opacity(isSelected ? 0.9 : 0.15))
-                                                        .frame(width: 52, height: 52)
-                                                        .overlay(
-                                                            Circle()
-                                                                .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
-                                                        )
-                                                        .shadow(color: isSelected ? Color(hex: cat.displayColor).opacity(0.6) : Color.clear, radius: 8)
-
-                                                    Image(systemName: cat.displayIcon)
-                                                        .font(.system(size: 20, weight: .bold))
-                                                        .foregroundColor(isSelected ? .white : Color(hex: cat.displayColor))
-                                                }
-
-                                                Text(cat.name)
-                                                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
-                                                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
-                                                    .lineLimit(1)
-                                            }
-                                            .frame(width: 68)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 4)
-                            }
+                        // 4. Dynamic Categories Grid (Expense & Income only)
+                        if transactionType != .transfer {
+                            categoriesSection
                         }
 
                         // 5. Date Quick Selector
@@ -353,7 +261,7 @@ struct AddTransactionView: View {
                                 .foregroundColor(Color.white.opacity(0.6))
                                 .padding(.horizontal, 20)
 
-                            TextField("e.g. Weekly grocery haul, Dinner with friends...", text: $comment)
+                            TextField(transactionType == .transfer ? "e.g. Monthly savings, credit card payoff..." : "e.g. Weekly grocery haul, Dinner with friends...", text: $comment)
                                 .textFieldStyle(.plain)
                                 .foregroundColor(.white)
                                 .padding(14)
@@ -367,7 +275,7 @@ struct AddTransactionView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                // Floating Action Bar with App's Gradient Styling
+                // Floating Action Bar
                 VStack(spacing: 0) {
                     Divider().background(Color.white.opacity(0.06))
                     Button {
@@ -378,8 +286,8 @@ struct AddTransactionView: View {
                                 ProgressView().tint(.white)
                             } else {
                                 HStack(spacing: 8) {
-                                    Image(systemName: transactionType == .expense ? "arrow.down.right.circle.fill" : "arrow.up.right.circle.fill")
-                                    Text(transactionType == .expense ? "Add Expense" : "Add Income")
+                                    Image(systemName: actionButtonIcon)
+                                    Text(actionButtonTitle)
                                         .font(.headline.bold())
                                 }
                                 .foregroundColor(.white)
@@ -389,15 +297,13 @@ struct AddTransactionView: View {
                         .padding(16)
                         .background(
                             LinearGradient(
-                                colors: transactionType == .expense ?
-                                    [Color(hex: "f43f5e"), Color(hex: "e11d48")] :
-                                    [Color(hex: "10b981"), Color(hex: "059669")],
+                                colors: actionButtonGradient,
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .shadow(
-                            color: (transactionType == .expense ? Color(hex: "f43f5e") : Color(hex: "10b981")).opacity(0.35),
+                            color: themeColor.opacity(0.35),
                             radius: 10, x: 0, y: 5
                         )
                     }
@@ -407,7 +313,7 @@ struct AddTransactionView: View {
                 }
                 .background(Color(hex: "0d1117").opacity(0.95))
             }
-            .navigationTitle(transactionType == .expense ? "New Expense" : "New Income")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -452,11 +358,15 @@ struct AddTransactionView: View {
                 Button("Cancel", role: .cancel) { newTagText = "" }
             }
             .task {
+                transactionType = initialType
                 do {
                     accounts = try await AccountService.shared.getAccounts()
                     if selectedAccountId.isEmpty, let first = accounts.first {
                         selectedAccountId = first.id
                         currencyCode = first.currencyCode
+                    }
+                    if destAccountId.isEmpty && accounts.count > 1 {
+                        destAccountId = accounts[1].id
                     }
                     categories = try await CategoryService.shared.getCategories()
                     updateSelectedCategoryForCurrentType()
@@ -467,13 +377,393 @@ struct AddTransactionView: View {
         }
     }
 
+    private var amountTitle: String {
+        switch transactionType {
+        case .expense: return "Amount to Spend"
+        case .income: return "Amount to Receive"
+        case .transfer: return "Amount to Transfer"
+        }
+    }
+
+    private var amountSymbol: String {
+        switch transactionType {
+        case .expense: return "-"
+        case .income: return "+"
+        case .transfer: return "⇄"
+        }
+    }
+
+    private var navigationTitle: String {
+        switch transactionType {
+        case .expense: return "New Expense"
+        case .income: return "New Income"
+        case .transfer: return "Transfer Money"
+        }
+    }
+
+    private var actionButtonIcon: String {
+        switch transactionType {
+        case .expense: return "arrow.down.right.circle.fill"
+        case .income: return "arrow.up.right.circle.fill"
+        case .transfer: return "arrow.left.arrow.right.circle.fill"
+        }
+    }
+
+    private var actionButtonTitle: String {
+        switch transactionType {
+        case .expense: return "Add Expense"
+        case .income: return "Add Income"
+        case .transfer: return "Transfer Funds"
+        }
+    }
+
+    private var actionButtonGradient: [Color] {
+        switch transactionType {
+        case .expense: return [Color(hex: "f43f5e"), Color(hex: "e11d48")]
+        case .income: return [Color(hex: "10b981"), Color(hex: "059669")]
+        case .transfer: return [Color(hex: "818cf8"), Color(hex: "6366f1")]
+        }
+    }
+
     private func updateSelectedCategoryForCurrentType() {
         if !filteredCategories.contains(where: { $0.id == selectedCategoryId }) {
             selectedCategoryId = filteredCategories.first?.id ?? ""
         }
     }
 
+    private func ensureDestAccountDifferent() {
+        if destAccountId.isEmpty || destAccountId == selectedAccountId {
+            if let other = accounts.first(where: { $0.id != selectedAccountId }) {
+                destAccountId = other.id
+            }
+        }
+    }
+
+    private func swapTransferAccounts() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            let tempAcc = selectedAccountId
+            let tempSub = selectedSubAccountId
+            selectedAccountId = destAccountId
+            selectedSubAccountId = destSubAccountId
+            destAccountId = tempAcc
+            destSubAccountId = tempSub
+            if let newSource = accounts.first(where: { $0.id == selectedAccountId }) {
+                currencyCode = newSource.currencyCode
+            }
+        }
+    }
+
     // MARK: - Subviews
+    @ViewBuilder
+    private var standardAccountSelector: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Target Account", systemImage: "building.columns.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(Color.white.opacity(0.6))
+                .padding(.horizontal, 20)
+
+            Menu {
+                ForEach(accounts) { acc in
+                    Button {
+                        selectedAccountId = acc.id
+                        selectedSubAccountId = ""
+                        currencyCode = acc.currencyCode
+                    } label: {
+                        HStack {
+                            Text("\(acc.name) (\(acc.currencyCode))")
+                            if selectedAccountId == acc.id {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: selectedAccount?.color ?? "818cf8").opacity(0.2))
+                            .frame(width: 38, height: 38)
+                        Image(systemName: selectedAccount?.type.icon ?? "building.columns")
+                            .font(.caption.bold())
+                            .foregroundColor(Color(hex: selectedAccount?.color ?? "818cf8"))
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(selectedAccount?.name ?? (accounts.first?.name ?? "Select Account"))
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                        Text("Balance: \(selectedAccount?.totalValue.formatted(currencyCode: selectedAccount?.currencyCode ?? currencyCode) ?? "0.00")")
+                            .font(.caption2)
+                            .foregroundColor(Color.white.opacity(0.5))
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.bold())
+                        .foregroundColor(Color(hex: "a78bfa"))
+                }
+                .padding(14)
+                .background(Color.white.opacity(0.04))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var transferAccountsCard: some View {
+        VStack(spacing: 12) {
+            // Source Account (From)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Label("From Account", systemImage: "arrow.up.circle.fill")
+                        .font(.caption.bold())
+                        .foregroundColor(Color(hex: "f87171"))
+                    Spacer()
+                    if let acc = selectedAccount {
+                        Text("Bal: \(acc.totalValue.formatted(currencyCode: acc.currencyCode))")
+                            .font(.caption2)
+                            .foregroundColor(Color.white.opacity(0.4))
+                    }
+                }
+
+                Menu {
+                    ForEach(accounts) { acc in
+                        Button {
+                            selectedAccountId = acc.id
+                            selectedSubAccountId = ""
+                            currencyCode = acc.currencyCode
+                            ensureDestAccountDifferent()
+                        } label: {
+                            HStack {
+                                Text("\(acc.name) (\(acc.currencyCode))")
+                                if selectedAccountId == acc.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: selectedAccount?.type.icon ?? "building.columns")
+                            .foregroundColor(Color(hex: selectedAccount?.color ?? "818cf8"))
+                        Text(selectedAccount?.name ?? "Select Source")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2)
+                            .foregroundColor(Color.white.opacity(0.4))
+                    }
+                    .padding(12)
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                // Optional Sub-Account selector for Source
+                if !sourceSubAccounts.isEmpty {
+                    Menu {
+                        Button("Main Account") { selectedSubAccountId = "" }
+                        ForEach(sourceSubAccounts) { sub in
+                            Button("\(sub.name) (\(sub.currencyCode))") {
+                                selectedSubAccountId = sub.id
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(selectedSubAccountId.isEmpty ? "Sub-Account: Main" : "Sub-Account: \(sourceSubAccounts.first(where: { $0.id == selectedSubAccountId })?.name ?? "")")
+                                .font(.caption)
+                                .foregroundColor(Color(hex: "a78bfa"))
+                            Spacer()
+                            Image(systemName: "chevron.down").font(.caption2).foregroundColor(Color(hex: "a78bfa"))
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color(hex: "a78bfa").opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+
+            // Swap Button & Divider
+            HStack {
+                Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
+                Button {
+                    swapTransferAccounts()
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down.circle.fill")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(Color(hex: "818cf8"))
+                        .background(Color(hex: "161b22"))
+                        .clipShape(Circle())
+                }
+                Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
+            }
+            .padding(.vertical, 2)
+
+            // Destination Account (To)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Label("To Account", systemImage: "arrow.down.circle.fill")
+                        .font(.caption.bold())
+                        .foregroundColor(Color(hex: "34d399"))
+                    Spacer()
+                    if let acc = selectedDestAccount {
+                        Text("Bal: \(acc.totalValue.formatted(currencyCode: acc.currencyCode))")
+                            .font(.caption2)
+                            .foregroundColor(Color.white.opacity(0.4))
+                    }
+                }
+
+                Menu {
+                    ForEach(accounts) { acc in
+                        Button {
+                            destAccountId = acc.id
+                            destSubAccountId = ""
+                        } label: {
+                            HStack {
+                                Text("\(acc.name) (\(acc.currencyCode))")
+                                if destAccountId == acc.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: selectedDestAccount?.type.icon ?? "building.columns")
+                            .foregroundColor(Color(hex: selectedDestAccount?.color ?? "34d399"))
+                        Text(selectedDestAccount?.name ?? "Select Destination")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2)
+                            .foregroundColor(Color.white.opacity(0.4))
+                    }
+                    .padding(12)
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                // Optional Sub-Account selector for Destination
+                if !destSubAccounts.isEmpty {
+                    Menu {
+                        Button("Main Account") { destSubAccountId = "" }
+                        ForEach(destSubAccounts) { sub in
+                            Button("\(sub.name) (\(sub.currencyCode))") {
+                                destSubAccountId = sub.id
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(destSubAccountId.isEmpty ? "Sub-Account: Main" : "Sub-Account: \(destSubAccounts.first(where: { $0.id == destSubAccountId })?.name ?? "")")
+                                .font(.caption)
+                                .foregroundColor(Color(hex: "34d399"))
+                            Spacer()
+                            Image(systemName: "chevron.down").font(.caption2).foregroundColor(Color(hex: "34d399"))
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color(hex: "34d399").opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: "818cf8").opacity(0.2), lineWidth: 1))
+        .padding(.horizontal, 20)
+    }
+
+    @ViewBuilder
+    private var categoriesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Category", systemImage: "square.grid.2x2.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color.white.opacity(0.6))
+                Spacer()
+                Button {
+                    showAddCategory = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("New Category")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color(hex: "a78bfa"))
+                }
+            }
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    // Add Category quick pill
+                    Button {
+                        showAddCategory = true
+                    } label: {
+                        VStack(spacing: 8) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(hex: "a78bfa").opacity(0.12))
+                                    .frame(width: 52, height: 52)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color(hex: "a78bfa").opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                    )
+
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(Color(hex: "a78bfa"))
+                            }
+
+                            Text("Add")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "a78bfa"))
+                                .lineLimit(1)
+                        }
+                        .frame(width: 64)
+                    }
+
+                    ForEach(filteredCategories) { cat in
+                        let isSelected = selectedCategoryId == cat.id
+                        Button {
+                            selectedCategoryId = cat.id
+                        } label: {
+                            VStack(spacing: 8) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(hex: cat.displayColor).opacity(isSelected ? 0.9 : 0.15))
+                                        .frame(width: 52, height: 52)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
+                                        )
+                                        .shadow(color: isSelected ? Color(hex: cat.displayColor).opacity(0.6) : Color.clear, radius: 8)
+
+                                    Image(systemName: cat.displayIcon)
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(isSelected ? .white : Color(hex: cat.displayColor))
+                                }
+
+                                Text(cat.name)
+                                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
+                                    .lineLimit(1)
+                            }
+                            .frame(width: 68)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
     @ViewBuilder
     private func tabPill(title: String, icon: String, isSelected: Bool, activeColor: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -521,27 +811,75 @@ struct AddTransactionView: View {
 
     // MARK: - Save
     private func save() async {
+        guard let amt = Double(amount), amt > 0 else {
+            errorMessage = "Please enter an amount greater than 0."
+            return
+        }
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm:ss"
+        let currentTimeString = timeFormatter.string(from: Date())
+
+        if transactionType == .transfer {
+            await saveTransfer(amount: amt, timeStr: currentTimeString)
+        } else {
+            await saveStandard(amount: amt, timeStr: currentTimeString)
+        }
+    }
+
+    private func saveTransfer(amount: Double, timeStr: String) async {
+        guard !selectedAccountId.isEmpty else {
+            errorMessage = "Please select a source account."
+            return
+        }
+
+        guard !destAccountId.isEmpty else {
+            errorMessage = "Please select a destination account."
+            return
+        }
+
+        if selectedAccountId == destAccountId && selectedSubAccountId == destSubAccountId {
+            errorMessage = "Source and destination accounts cannot be identical."
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        let payload = CreateTransferPayload(
+            sourceAccountId: selectedAccountId,
+            sourceSubAccountId: selectedSubAccountId.isEmpty ? nil : selectedSubAccountId,
+            destAccountId: destAccountId,
+            destSubAccountId: destSubAccountId.isEmpty ? nil : destSubAccountId,
+            amount: amount,
+            currencyCode: currencyCode,
+            exchangeRate: nil,
+            description: comment.trimmingCharacters(in: .whitespaces).isEmpty ? "Funds Transfer" : comment,
+            date: selectedDateString,
+            payee: nil
+        )
+
+        do {
+            let _: TransactionResponse = try await TransactionService.shared.createTransfer(payload)
+            onSuccess()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func saveStandard(amount: Double, timeStr: String) async {
         var targetAccountId = selectedAccountId
         if targetAccountId.isEmpty {
             if let first = accounts.first {
                 targetAccountId = first.id
                 selectedAccountId = first.id
-            } else {
-                if let accs = try? await AccountService.shared.getAccounts(), let first = accs.first {
-                    accounts = accs
-                    targetAccountId = first.id
-                    selectedAccountId = first.id
-                }
             }
         }
 
         guard !targetAccountId.isEmpty else {
             errorMessage = "Please select or create an account first."
-            return
-        }
-
-        guard let amt = Double(amount), amt > 0 else {
-            errorMessage = "Please enter an amount greater than 0."
             return
         }
 
@@ -562,20 +900,16 @@ struct AddTransactionView: View {
         errorMessage = nil
         defer { isLoading = false }
 
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm:ss"
-        let currentTimeString = timeFormatter.string(from: Date())
-
         let payload = CreateTransactionPayload(
             accountId: targetAccountId,
-            subAccountId: nil,
+            subAccountId: selectedSubAccountId.isEmpty ? nil : selectedSubAccountId,
             categoryId: targetCategoryId,
             type: transactionType.rawValue,
-            amount: amt,
+            amount: amount,
             currencyCode: currencyCode,
             description: comment.trimmingCharacters(in: .whitespaces).isEmpty ? nil : comment,
             date: selectedDateString,
-            time: currentTimeString,
+            time: timeStr,
             payee: nil
         )
 

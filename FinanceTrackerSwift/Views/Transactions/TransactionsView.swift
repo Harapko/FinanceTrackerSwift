@@ -138,6 +138,7 @@ class TransactionsViewModel {
 struct TransactionsView: View {
     @State private var viewModel = TransactionsViewModel()
     @State private var showAddTransaction = false
+    @State private var initialAddType: TransactionType = .expense
     @State private var showAddCategory = false
     @State private var showFilters = false
     @State private var transactionToDelete: TransactionResponse?
@@ -170,9 +171,16 @@ struct TransactionsView: View {
 
                         Menu {
                             Button {
+                                initialAddType = .expense
                                 showAddTransaction = true
                             } label: {
                                 Label("New Transaction", systemImage: "plus.circle")
+                            }
+                            Button {
+                                initialAddType = .transfer
+                                showAddTransaction = true
+                            } label: {
+                                Label("Transfer Funds", systemImage: "arrow.left.arrow.right.circle")
                             }
                             Button {
                                 showAddCategory = true
@@ -299,7 +307,7 @@ struct TransactionsView: View {
         .sheet(isPresented: $showAddTransaction, onDismiss: {
             Task { await viewModel.load(page: 1, isManualRefresh: true) }
         }) {
-            AddTransactionView {
+            AddTransactionView(initialType: initialAddType) {
                 Task { await viewModel.load(page: 1, isManualRefresh: true) }
             }
         }

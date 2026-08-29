@@ -38,7 +38,6 @@ struct TagResponse: Decodable, Identifiable, Hashable {
     }
 
     init(from decoder: Decoder) throws {
-        // Can decode either from TagResponse object { id, name, color } or raw String
         if let container = try? decoder.container(keyedBy: CodingKeys.self) {
             id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
             name = (try? container.decode(String.self, forKey: .name)) ?? ""
@@ -211,5 +210,42 @@ struct CreateTransactionPayload: Encodable {
         self.time = time
         self.payee = payee
         self.tags = tags
+    }
+}
+
+struct CreateTransferPayload: Encodable {
+    let sourceAccountId: String
+    let sourceSubAccountId: String?
+    let destAccountId: String
+    let destSubAccountId: String?
+    let amount: Double
+    let currencyCode: String
+    let exchangeRate: Double?
+    let description: String?
+    let date: String
+    let payee: String?
+
+    init(
+        sourceAccountId: String,
+        sourceSubAccountId: String? = nil,
+        destAccountId: String,
+        destSubAccountId: String? = nil,
+        amount: Double,
+        currencyCode: String,
+        exchangeRate: Double? = nil,
+        description: String? = nil,
+        date: String,
+        payee: String? = nil
+    ) {
+        self.sourceAccountId = sourceAccountId
+        self.sourceSubAccountId = sourceSubAccountId
+        self.destAccountId = destAccountId
+        self.destSubAccountId = destSubAccountId
+        self.amount = amount
+        self.currencyCode = currencyCode
+        self.exchangeRate = exchangeRate
+        self.description = description
+        self.date = date
+        self.payee = payee
     }
 }
