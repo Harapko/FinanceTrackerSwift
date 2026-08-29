@@ -51,14 +51,6 @@ struct PagedTransactions: Decodable {
     let pageSize: Int?
 }
 
-struct CategoryResponse: Decodable, Identifiable {
-    let id: String
-    let name: String
-    let type: String?
-    let color: String?
-    let icon: String?
-}
-
 struct CreateTransactionPayload: Encodable {
     let accountId: String
     let subAccountId: String?

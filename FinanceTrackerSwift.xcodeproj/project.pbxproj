@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B1110001C8164D018EA79BCC /* CategoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1110001C8164D018EA79BCC /* CategoryModels.swift */; };
+		B1110002C8164D018EA79BCC /* CategoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1110002C8164D018EA79BCC /* CategoryService.swift */; };
+		B1110003C8164D018EA79BCC /* AddCategoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1110003C8164D018EA79BCC /* AddCategoryView.swift */; };
 		D5C8252856A243D3A2EC29EF /* UserProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C08B8AD8494413A23698F3 /* UserProfileSheet.swift */; };
 		852B63C4592043BEB318E052 /* ManageGoalAllocationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */; };
 		0C033A5FFD3840519A39F51B /* AddAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333376E4447E4399952EF9D0 /* AddAssetView.swift */; };
@@ -49,6 +52,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A1110001C8164D018EA79BCC /* CategoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/CategoryModels.swift"; sourceTree = "<group>"; };
+		A1110002C8164D018EA79BCC /* CategoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/CategoryService.swift"; sourceTree = "<group>"; };
+		A1110003C8164D018EA79BCC /* AddCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Categories/AddCategoryView.swift"; sourceTree = "<group>"; };
 		51C08B8AD8494413A23698F3 /* UserProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Auth/UserProfileSheet.swift"; sourceTree = "<group>"; };
 		7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Savings/ManageGoalAllocationsView.swift"; sourceTree = "<group>"; };
 		333376E4447E4399952EF9D0 /* AddAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Accounts/AddAssetView.swift"; sourceTree = "<group>"; };
@@ -113,6 +119,9 @@
 		A100000000000000000000002 /* FinanceTrackerSwift */ = {
 			isa = PBXGroup;
 			children = (
+				A1110001C8164D018EA79BCC /* CategoryModels.swift */,
+				A1110002C8164D018EA79BCC /* CategoryService.swift */,
+				A1110003C8164D018EA79BCC /* AddCategoryView.swift */,
 				51C08B8AD8494413A23698F3 /* UserProfileSheet.swift */,
 				7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */,
 				28F644C766B54C2680A5F7E0 /* HoldingModels.swift */,
@@ -233,6 +242,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1110001C8164D018EA79BCC /* CategoryModels.swift in Sources */,
+				B1110002C8164D018EA79BCC /* CategoryService.swift in Sources */,
+				B1110003C8164D018EA79BCC /* AddCategoryView.swift in Sources */,
 				D5C8252856A243D3A2EC29EF /* UserProfileSheet.swift in Sources */,
 				852B63C4592043BEB318E052 /* ManageGoalAllocationsView.swift in Sources */,
 				0C033A5FFD3840519A39F51B /* AddAssetView.swift in Sources */,

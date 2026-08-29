@@ -76,6 +76,7 @@ class TransactionsViewModel {
 struct TransactionsView: View {
     @State private var viewModel = TransactionsViewModel()
     @State private var showAddTransaction = false
+    @State private var showAddCategory = false
     @State private var showFilters = false
     @State private var transactionToDelete: TransactionResponse?
     @State private var showDeleteConfirmation = false
@@ -100,7 +101,19 @@ struct TransactionsView: View {
                                 .foregroundColor(Color(hex: "a78bfa"))
                                 .font(.title3)
                         }
-                        Button { showAddTransaction = true } label: {
+
+                        Menu {
+                            Button {
+                                showAddTransaction = true
+                            } label: {
+                                Label("New Transaction", systemImage: "plus.circle")
+                            }
+                            Button {
+                                showAddCategory = true
+                            } label: {
+                                Label("New Category", systemImage: "tag")
+                            }
+                        } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(LinearGradient(
                                     colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
@@ -183,6 +196,9 @@ struct TransactionsView: View {
             Task { await viewModel.load(page: 1) }
         }) {
             AddTransactionView(onSuccess: {})
+        }
+        .sheet(isPresented: $showAddCategory) {
+            AddCategoryView()
         }
         .confirmationDialog(
             "Delete Transaction",

@@ -1,12 +1,5 @@
 import SwiftUI
 
-struct CategoryItem: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let icon: String
-    let color: String
-}
-
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     var onSuccess: () -> Void = {}
@@ -15,10 +8,11 @@ struct AddTransactionView: View {
     @State private var amount: String = ""
     @State private var currencyCode: String = "USD"
     @State private var selectedAccountId: String = ""
-    @State private var selectedCategoryId: String = "groceries"
+    @State private var selectedCategoryId: String = ""
     @State private var selectedDateOption: Int = 0 // 0: today, 1: yesterday, 2: two days ago, 3: custom
     @State private var customDate: Date = Date()
     @State private var showDatePicker = false
+    @State private var showAddCategory = false
     @State private var tags: [String] = []
     @State private var showAddTagPrompt = false
     @State private var newTagText = ""
@@ -31,19 +25,13 @@ struct AddTransactionView: View {
 
     let availableCurrencies = ["USD", "EUR", "UAH", "GBP", "PLN", "CAD", "CHF", "JPY"]
 
-    // Dynamic integrated categories with app palette
-    let defaultCategories: [CategoryItem] = [
-        CategoryItem(id: "groceries", name: "Groceries", icon: "cart.fill", color: "#34d399"),
-        CategoryItem(id: "cafe", name: "Cafe & Dining", icon: "cup.and.saucer.fill", color: "#a855f7"),
-        CategoryItem(id: "home", name: "Housing", icon: "house.fill", color: "#f97316"),
-        CategoryItem(id: "health", name: "Health", icon: "heart.fill", color: "#ef4444"),
-        CategoryItem(id: "leisure", name: "Leisure", icon: "gamecontroller.fill", color: "#06b6d4"),
-        CategoryItem(id: "education", name: "Education", icon: "graduationcap.fill", color: "#3b82f6"),
-        CategoryItem(id: "gifts", name: "Gifts", icon: "gift.fill", color: "#ec4899"),
-        CategoryItem(id: "salary", name: "Salary", icon: "briefcase.fill", color: "#10b981"),
-        CategoryItem(id: "investment", name: "Investment", icon: "chart.line.uptrend.xyaxis", color: "#818cf8"),
-        CategoryItem(id: "more", name: "Other", icon: "ellipsis.circle.fill", color: "#64748b")
-    ]
+    var filteredCategories: [CategoryResponse] {
+        categories.filter { cat in
+            guard let type = cat.type else { return true }
+            return type.caseInsensitiveCompare(transactionType.rawValue) == .orderedSame ||
+                   type.caseInsensitiveCompare("Both") == .orderedSame
+        }
+    }
 
     var selectedAccount: AccountResponse? {
         accounts.first { $0.id == selectedAccountId }
@@ -92,6 +80,7 @@ struct AddTransactionView: View {
                             ) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                     transactionType = .expense
+                                    updateSelectedCategoryForCurrentType()
                                 }
                             }
 
@@ -103,6 +92,7 @@ struct AddTransactionView: View {
                             ) {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                     transactionType = .income
+                                    updateSelectedCategoryForCurrentType()
                                 }
                             }
                         }
@@ -224,16 +214,56 @@ struct AddTransactionView: View {
                             }
                         }
 
-                        // 4. Categories Grid (Integrated with Brand Aesthetics)
+                        // 4. Dynamic Categories Grid & Quick Creator
                         VStack(alignment: .leading, spacing: 10) {
-                            Label("Category", systemImage: "square.grid.2x2.fill")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.6))
-                                .padding(.horizontal, 20)
+                            HStack {
+                                Label("Category", systemImage: "square.grid.2x2.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                                Spacer()
+                                Button {
+                                    showAddCategory = true
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "plus.circle.fill")
+                                        Text("New Category")
+                                    }
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(Color(hex: "a78bfa"))
+                                }
+                            }
+                            .padding(.horizontal, 20)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(defaultCategories) { cat in
+                                    // Add Category quick pill
+                                    Button {
+                                        showAddCategory = true
+                                    } label: {
+                                        VStack(spacing: 8) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color(hex: "a78bfa").opacity(0.12))
+                                                    .frame(width: 52, height: 52)
+                                                    .overlay(
+                                                        Circle()
+                                                            .stroke(Color(hex: "a78bfa").opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                                    )
+
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 18, weight: .bold))
+                                                    .foregroundColor(Color(hex: "a78bfa"))
+                                            }
+
+                                            Text("Add")
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(Color(hex: "a78bfa"))
+                                                .lineLimit(1)
+                                        }
+                                        .frame(width: 64)
+                                    }
+
+                                    ForEach(filteredCategories) { cat in
                                         let isSelected = selectedCategoryId == cat.id
                                         Button {
                                             selectedCategoryId = cat.id
@@ -241,17 +271,17 @@ struct AddTransactionView: View {
                                             VStack(spacing: 8) {
                                                 ZStack {
                                                     Circle()
-                                                        .fill(Color(hex: cat.color).opacity(isSelected ? 0.9 : 0.15))
+                                                        .fill(Color(hex: cat.displayColor).opacity(isSelected ? 0.9 : 0.15))
                                                         .frame(width: 52, height: 52)
                                                         .overlay(
                                                             Circle()
                                                                 .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
                                                         )
-                                                        .shadow(color: isSelected ? Color(hex: cat.color).opacity(0.6) : Color.clear, radius: 8)
+                                                        .shadow(color: isSelected ? Color(hex: cat.displayColor).opacity(0.6) : Color.clear, radius: 8)
 
-                                                    Image(systemName: cat.icon)
+                                                    Image(systemName: cat.displayIcon)
                                                         .font(.system(size: 20, weight: .bold))
-                                                        .foregroundColor(isSelected ? .white : Color(hex: cat.color))
+                                                        .foregroundColor(isSelected ? .white : Color(hex: cat.displayColor))
                                                 }
 
                                                 Text(cat.name)
@@ -312,47 +342,6 @@ struct AddTransactionView: View {
                                 .padding(.horizontal, 20)
                         }
 
-                        // 7. Tags
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Label("Tags (optional)", systemImage: "tag.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-
-                            HStack(spacing: 8) {
-                                Button {
-                                    showAddTagPrompt = true
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "plus")
-                                        Text("Add tag")
-                                    }
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color(hex: "a78bfa"))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color(hex: "a78bfa").opacity(0.12))
-                                    .clipShape(Capsule())
-                                    .overlay(Capsule().stroke(Color(hex: "a78bfa").opacity(0.3), lineWidth: 1))
-                                }
-
-                                ForEach(tags, id: \.self) { t in
-                                    Text("#\(t)")
-                                        .font(.caption2.bold())
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 5)
-                                        .background(Color.white.opacity(0.08))
-                                        .clipShape(Capsule())
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                        }
-
-                        // Error Banner
                         if let error = errorMessage {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -364,9 +353,8 @@ struct AddTransactionView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .padding(.horizontal, 20)
                         }
-
-                        Spacer().frame(height: 80)
                     }
+                    .padding(.bottom, 100)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -437,6 +425,12 @@ struct AddTransactionView: View {
                 }
                 .presentationDetents([.medium])
             }
+            .sheet(isPresented: $showAddCategory) {
+                AddCategoryView(initialType: transactionType == .income ? .income : .expense) { newCat in
+                    categories.append(newCat)
+                    selectedCategoryId = newCat.id
+                }
+            }
             .alert("Add Tag", isPresented: $showAddTagPrompt) {
                 TextField("Tag name", text: $newTagText)
                 Button("Add") {
@@ -455,9 +449,16 @@ struct AddTransactionView: View {
                         selectedAccountId = first.id
                         currencyCode = first.currencyCode
                     }
-                    categories = try await TransactionService.shared.getCategories()
+                    categories = try await CategoryService.shared.getCategories()
+                    updateSelectedCategoryForCurrentType()
                 } catch {}
             }
+        }
+    }
+
+    private func updateSelectedCategoryForCurrentType() {
+        if !filteredCategories.contains(where: { $0.id == selectedCategoryId }) {
+            selectedCategoryId = filteredCategories.first?.id ?? ""
         }
     }
 
@@ -537,12 +538,10 @@ struct AddTransactionView: View {
         errorMessage = nil
         defer { isLoading = false }
 
-        let mappedCat = categories.first { $0.name.lowercased() == selectedCategoryId.lowercased() } ?? categories.first
-
         let payload = CreateTransactionPayload(
             accountId: targetAccountId,
             subAccountId: nil,
-            categoryId: mappedCat?.id,
+            categoryId: selectedCategoryId.isEmpty ? nil : selectedCategoryId,
             type: transactionType.rawValue,
             amount: amt,
             currencyCode: currencyCode,
