@@ -5,11 +5,6 @@ struct LoginRequest: Encodable {
     let password: String
 }
 
-struct LoginResponse: Decodable {
-    let token: String
-    let expiresAt: String?
-}
-
 struct RegisterRequest: Encodable {
     let firstName: String
     let lastName: String
@@ -18,12 +13,22 @@ struct RegisterRequest: Encodable {
     let defaultCurrencyCode: String
 }
 
-struct UserResponse: Decodable, Identifiable {
+struct UserResponse: Codable, Identifiable {
     let id: String
     let firstName: String
     let lastName: String
     let email: String
     let defaultCurrencyCode: String
+    let timezone: String?
+    let createdAtUtc: String?
 
     var fullName: String { "\(firstName) \(lastName)" }
+}
+
+/// The actual shape returned by /api/auth/login and /api/auth/register
+struct AuthResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String
+    let expiresAt: String
+    let user: UserResponse
 }

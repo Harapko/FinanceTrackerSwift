@@ -11,36 +11,40 @@ final class AuthManager {
     var errorMessage: String?
 
     private init() {
-        // Check if token exists on startup
-        if let _ = KeychainHelper.shared.read(key: "finance_tracker_token") {
+        // Restore session from keychain on startup
+        if let token = KeychainHelper.shared.read(key: "finance_tracker_token"),
+           let userData = KeychainHelper.shared.read(key: "finance_tracker_user"),
+           let data = userData.data(using: .utf8),
+           let user = try? JSONDecoder().decode(UserResponse.self, from: data),
+           !token.isEmpty {
+            currentUser = user
             isAuthenticated = true
-            Task { await fetchCurrentUser() }
         }
     }
 
+    // MARK: - Login
     func login(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let response: LoginResponse = try await APIClient.shared.post(
+            let response: AuthResponse = try await APIClient.shared.post(
                 "/api/auth/login",
                 body: LoginRequest(email: email, password: password)
             )
-            KeychainHelper.shared.save(key: "finance_tracker_token", value: response.token)
-            isAuthenticated = true
-            await fetchCurrentUser()
+            handleAuthSuccess(response)
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
+    // MARK: - Register
     func register(firstName: String, lastName: String, email: String, password: String, currencyCode: String) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let _: UserResponse = try await APIClient.shared.post(
+            let response: AuthResponse = try await APIClient.shared.post(
                 "/api/auth/register",
                 body: RegisterRequest(
                     firstName: firstName,
@@ -50,25 +54,32 @@ final class AuthManager {
                     defaultCurrencyCode: currencyCode
                 )
             )
-            await login(email: email, password: password)
+            handleAuthSuccess(response)
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
+    // MARK: - Logout
     func logout() {
         KeychainHelper.shared.delete(key: "finance_tracker_token")
+        KeychainHelper.shared.delete(key: "finance_tracker_user")
         currentUser = nil
         isAuthenticated = false
     }
 
-    func fetchCurrentUser() async {
-        do {
-            let user: UserResponse = try await APIClient.shared.get("/api/auth/me")
-            currentUser = user
-        } catch {
-            // Token invalid — log out
-            logout()
+    // MARK: - Handle success (both login & register return AuthResponse)
+    private func handleAuthSuccess(_ response: AuthResponse) {
+        // Persist token
+        KeychainHelper.shared.save(key: "finance_tracker_token", value: response.accessToken)
+
+        // Persist user as JSON
+        if let data = try? JSONEncoder().encode(response.user),
+           let json = String(data: data, encoding: .utf8) {
+            KeychainHelper.shared.save(key: "finance_tracker_user", value: json)
         }
+
+        currentUser = response.user
+        isAuthenticated = true
     }
 }
