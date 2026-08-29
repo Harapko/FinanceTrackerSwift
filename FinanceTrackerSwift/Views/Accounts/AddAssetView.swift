@@ -12,8 +12,8 @@ struct AddAssetView: View {
 
     @State private var tradeType = "Buy"
     @State private var instrumentType = "Stock"
-    @State private var symbol = ""
-    @State private var quantity = ""
+    @State private var symbol = "VOO"
+    @State private var quantity = "1"
     @State private var pricePerUnit = ""
     @State private var fee = "0"
     @State private var currencyCode = "USD"
@@ -30,6 +30,7 @@ struct AddAssetView: View {
     let instrumentTypes = ["Stock", "Crypto"]
     let stockSuggestions = ["VOO", "SPY", "AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "AMZN"]
     let cryptoSuggestions = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]
+    let quantityPresets = ["1", "2", "5", "10", "25", "50", "100"]
 
     var activeSymbol: String {
         symbol.trimmingCharacters(in: .whitespaces).uppercased()
@@ -44,8 +45,8 @@ struct AddAssetView: View {
     }
 
     var totalCost: Double {
-        let q = Double(quantity) ?? 0
-        let p = Double(pricePerUnit) ?? 0
+        let q = Double(quantity) ?? 1
+        let p = Double(pricePerUnit) ?? (liveQuote?.resolvedPrice ?? 0)
         let f = Double(fee) ?? 0
         return (q * p) + f
     }
@@ -72,6 +73,10 @@ struct AddAssetView: View {
                             }
                         }
                         .pickerStyle(.segmented)
+                        .onChange(of: instrumentType) { _, newType in
+                            symbol = newType == "Crypto" ? "BTC" : "VOO"
+                            Task { await fetchQuote() }
+                        }
 
                         // Symbol with Quote button
                         VStack(alignment: .leading, spacing: 8) {
@@ -85,6 +90,9 @@ struct AddAssetView: View {
                                     .autocorrectionDisabled()
                                     .textFieldStyle(.plain)
                                     .foregroundColor(.white)
+                                    .onSubmit {
+                                        Task { await fetchQuote() }
+                                    }
 
                                 if isFetchingQuote {
                                     ProgressView().tint(Color(hex: "a78bfa"))
@@ -219,15 +227,39 @@ struct AddAssetView: View {
                         }
 
                         // Quantity & Price Row
-                        HStack(spacing: 12) {
-                            formField("Quantity", icon: "number") {
-                                TextField("e.g. 1.5", text: $quantity)
-                                    .keyboardType(.decimalPad)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 12) {
+                                formField("Quantity", icon: "number") {
+                                    TextField("1", text: $quantity)
+                                        .keyboardType(.decimalPad)
+                                }
+
+                                formField("Price / Unit (\(currencyCode))", icon: "dollarsign.circle") {
+                                    TextField(liveQuote != nil ? String(format: "%.2f", liveQuote!.resolvedPrice) : "0.00", text: $pricePerUnit)
+                                        .keyboardType(.decimalPad)
+                                }
                             }
 
-                            formField("Price / Unit (\(currencyCode))", icon: "dollarsign.circle") {
-                                TextField("0.00", text: $pricePerUnit)
-                                    .keyboardType(.decimalPad)
+                            // Quick Quantity Presets
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    Text("Qty:")
+                                        .font(.caption2)
+                                        .foregroundColor(Color.white.opacity(0.4))
+                                    ForEach(quantityPresets, id: \.self) { q in
+                                        Button {
+                                            quantity = q
+                                        } label: {
+                                            Text(q)
+                                                .font(.caption2.bold())
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 3)
+                                                .background(quantity == q ? Color(hex: "818cf8").opacity(0.3) : Color.white.opacity(0.06))
+                                                .foregroundColor(quantity == q ? Color(hex: "a78bfa") : Color.white.opacity(0.7))
+                                                .clipShape(Capsule())
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -255,7 +287,7 @@ struct AddAssetView: View {
                                     Text("Estimated Total:")
                                         .font(.caption)
                                         .foregroundColor(Color.white.opacity(0.6))
-                                    Text("\(quantity) × \(pricePerUnit) \(currencyCode)")
+                                    Text("\(quantity.isEmpty ? "1" : quantity) × \(pricePerUnit.isEmpty ? (liveQuote != nil ? String(format: "%.2f", liveQuote!.resolvedPrice) : "0.00") : pricePerUnit) \(currencyCode)")
                                         .font(.caption2)
                                         .foregroundColor(Color.white.opacity(0.4))
                                 }
@@ -306,7 +338,7 @@ struct AddAssetView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
-                        .disabled(isLoading || activeSymbol.isEmpty || quantity.isEmpty || pricePerUnit.isEmpty || selectedAccountId.isEmpty)
+                        .disabled(isLoading || activeSymbol.isEmpty || selectedAccountId.isEmpty)
                     }
                     .padding(20)
                 }
@@ -340,6 +372,9 @@ struct AddAssetView: View {
                 date = formatter.string(from: Date())
                 formatter.dateFormat = "HH:mm:ss"
                 time = formatter.string(from: Date())
+
+                // Auto fetch initial quote
+                await fetchQuote()
             }
             .onChange(of: selectedAccountId) { _, newId in
                 if let acc = accounts.first(where: { $0.id == newId }) {
@@ -358,7 +393,9 @@ struct AddAssetView: View {
         do {
             let quote = try await HoldingService.shared.getLiveQuote(symbol: sym, type: instrumentType)
             liveQuote = quote
-            pricePerUnit = String(format: "%.4f", quote.resolvedPrice)
+            if pricePerUnit.isEmpty || pricePerUnit == "0.00" || pricePerUnit == "0" {
+                pricePerUnit = String(format: "%.4f", quote.resolvedPrice)
+            }
             if let cur = quote.currencyCode, !cur.isEmpty {
                 currencyCode = cur
             }
@@ -369,10 +406,30 @@ struct AddAssetView: View {
 
     private func save() async {
         let sym = activeSymbol
-        guard !sym.isEmpty,
-              let qty = Double(quantity), qty > 0,
-              let price = Double(pricePerUnit), price > 0,
-              !selectedAccountId.isEmpty else { return }
+        guard !sym.isEmpty, !selectedAccountId.isEmpty else { return }
+
+        // Ensure price is resolved
+        var finalPrice = Double(pricePerUnit) ?? 0
+        if finalPrice <= 0 {
+            if let q = liveQuote, q.resolvedPrice > 0 {
+                finalPrice = q.resolvedPrice
+            } else {
+                // Fetch quote on the fly
+                do {
+                    let q = try await HoldingService.shared.getLiveQuote(symbol: sym, type: instrumentType)
+                    finalPrice = q.resolvedPrice
+                } catch {
+                    errorMessage = "Please enter a price per unit or tap Quote."
+                    return
+                }
+            }
+        }
+
+        let finalQty = Double(quantity) ?? 1.0
+        guard finalQty > 0, finalPrice > 0 else {
+            errorMessage = "Please enter a valid quantity and price."
+            return
+        }
 
         isLoading = true
         errorMessage = nil
@@ -385,8 +442,8 @@ struct AddAssetView: View {
             let payload = CreateInstrumentTransactionPayload(
                 instrumentId: instrument.id,
                 type: tradeType,
-                quantity: qty,
-                pricePerUnit: price,
+                quantity: finalQty,
+                pricePerUnit: finalPrice,
                 subAccountId: selectedSubAccountId.isEmpty ? nil : selectedSubAccountId,
                 fee: Double(fee) ?? 0,
                 currencyCode: currencyCode,
