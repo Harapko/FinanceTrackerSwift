@@ -2,19 +2,29 @@ import SwiftUI
 
 struct AddAccountView: View {
     @Environment(\.dismiss) private var dismiss
-    var editingAccount: AccountResponse? = nil
-    var onSuccess: (() -> Void) = {}
+    let editingAccount: AccountResponse?
+    let onSuccess: () -> Void
 
-    @State private var name = ""
-    @State private var type: AccountType = .bankAccount
-    @State private var currencyCode = "USD"
-    @State private var color = "#818cf8"
-    @State private var description = ""
+    @State private var name: String
+    @State private var type: AccountType
+    @State private var currencyCode: String
+    @State private var color: String
+    @State private var description: String
     @State private var isLoading = false
     @State private var errorMessage: String?
 
     let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "AUD", "CHF", "BTC", "ETH", "SOL"]
     let colorOptions = ["#818cf8", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#fb923c", "#e879f9", "#38bdf8", "#2bff00"]
+
+    init(editingAccount: AccountResponse? = nil, onSuccess: @escaping () -> Void = {}) {
+        self.editingAccount = editingAccount
+        self.onSuccess = onSuccess
+        _name = State(initialValue: editingAccount?.name ?? "")
+        _type = State(initialValue: editingAccount?.type ?? .bankAccount)
+        _currencyCode = State(initialValue: editingAccount?.currencyCode ?? "USD")
+        _color = State(initialValue: editingAccount?.color ?? "#818cf8")
+        _description = State(initialValue: editingAccount?.description ?? "")
+    }
 
     var isEditing: Bool { editingAccount != nil }
 
@@ -27,7 +37,7 @@ struct AddAccountView: View {
                     VStack(spacing: 20) {
                         // Name
                         formField("Account Name", icon: "building.columns") {
-                            TextField("e.g. My Chase Account", text: $name)
+                            TextField("e.g. My Chase Account, Freedom Finance", text: $name)
                         }
 
                         // Type
@@ -95,7 +105,7 @@ struct AddAccountView: View {
 
                         // Description
                         formField("Description (optional)", icon: "text.alignleft") {
-                            TextField("Optional description", text: $description)
+                            TextField("Notes or description...", text: $description)
                         }
 
                         if let error = errorMessage {
@@ -118,7 +128,7 @@ struct AddAccountView: View {
                                     ProgressView().tint(.white)
                                 } else {
                                     Text(isEditing ? "Save Changes" : "Create Account")
-                                        .font(.headline)
+                                        .font(.headline.bold())
                                         .foregroundColor(.white)
                                 }
                             }
@@ -143,15 +153,6 @@ struct AddAccountView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
-                }
-            }
-            .onAppear {
-                if let acc = editingAccount {
-                    name = acc.name
-                    type = acc.type
-                    currencyCode = acc.currencyCode
-                    color = acc.color ?? "#818cf8"
-                    description = acc.description ?? ""
                 }
             }
         }

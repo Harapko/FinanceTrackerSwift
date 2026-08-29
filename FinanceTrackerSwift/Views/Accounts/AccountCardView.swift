@@ -18,10 +18,6 @@ struct AccountCardView: View {
         Color(hex: account.color ?? "#818cf8")
     }
 
-    var isInvestmentAccount: Bool {
-        account.type == .investmentAccount || account.type == .cryptoWallet
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header: Avatar, Name, Type, Actions
@@ -49,14 +45,12 @@ struct AccountCardView: View {
 
                 // Action buttons
                 HStack(spacing: 6) {
-                    if isInvestmentAccount {
-                        Button {
-                            onAddAsset()
-                        } label: {
-                            Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(Color(hex: "34d399"))
-                        }
+                    Button {
+                        onAddAsset()
+                    } label: {
+                        Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(hex: "34d399"))
                     }
 
                     Button {
@@ -69,23 +63,21 @@ struct AccountCardView: View {
 
                     Menu {
                         Button {
-                            onEdit()
+                            onAddAsset()
                         } label: {
-                            Label("Edit Account", systemImage: "pencil")
-                        }
-
-                        if isInvestmentAccount {
-                            Button {
-                                onAddAsset()
-                            } label: {
-                                Label("Add / Buy Asset", systemImage: "plus.app")
-                            }
+                            Label("Buy / Add Asset (Stock/Crypto)", systemImage: "chart.line.uptrend.xyaxis")
                         }
 
                         Button {
                             onAddSubAccount()
                         } label: {
                             Label("Add Sub-Account", systemImage: "plus.rectangle.on.rectangle")
+                        }
+
+                        Button {
+                            onEdit()
+                        } label: {
+                            Label("Edit Account", systemImage: "pencil")
                         }
 
                         Divider()
@@ -146,20 +138,18 @@ struct AccountCardView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.05), lineWidth: 1))
 
-            // Direct Account Holdings (if investment account)
-            if isInvestmentAccount {
-                AccountHoldingsSection(
-                    holdings: holdings,
-                    currencyCode: account.currencyCode,
-                    isLoading: isLoadingHoldings,
-                    onDeleteHolding: { holdingId in
-                        Task {
-                            try? await HoldingService.shared.deleteHolding(id: holdingId)
-                            await loadHoldings()
-                        }
+            // Direct Account Holdings (Stock & Crypto)
+            AccountHoldingsSection(
+                holdings: holdings,
+                currencyCode: account.currencyCode,
+                isLoading: isLoadingHoldings,
+                onDeleteHolding: { holdingId in
+                    Task {
+                        try? await HoldingService.shared.deleteHolding(id: holdingId)
+                        await loadHoldings()
                     }
-                )
-            }
+                }
+            )
 
             // Sub-Accounts Section
             if !account.subAccountsList.isEmpty {
@@ -217,9 +207,7 @@ struct AccountCardView: View {
                 .stroke(accentColor.opacity(0.35), lineWidth: 1.5)
         )
         .task {
-            if isInvestmentAccount {
-                await loadHoldings()
-            }
+            await loadHoldings()
         }
     }
 
@@ -244,10 +232,6 @@ struct SubAccountCardRow: View {
     @State private var holdings: [HoldingResponse] = []
     @State private var isExpanded = false
     @State private var isLoadingHoldings = false
-
-    var isInvestment: Bool {
-        subAccount.type == .investment
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -288,17 +272,15 @@ struct SubAccountCardRow: View {
 
                 Menu {
                     Button {
+                        onAddAsset()
+                    } label: {
+                        Label("Buy / Add Asset (Stock/Crypto)", systemImage: "chart.line.uptrend.xyaxis")
+                    }
+
+                    Button {
                         onEdit()
                     } label: {
                         Label("Edit Sub-Account", systemImage: "pencil")
-                    }
-
-                    if isInvestment {
-                        Button {
-                            onAddAsset()
-                        } label: {
-                            Label("Buy / Add Asset", systemImage: "chart.line.uptrend.xyaxis")
-                        }
                     }
 
                     Divider()
@@ -317,28 +299,24 @@ struct SubAccountCardRow: View {
             }
 
             // Subaccount holdings
-            if isInvestment && !holdings.isEmpty {
-                AccountHoldingsSection(
-                    holdings: holdings,
-                    currencyCode: subAccount.currencyCode,
-                    isLoading: isLoadingHoldings,
-                    onDeleteHolding: { holdingId in
-                        Task {
-                            try? await HoldingService.shared.deleteHolding(id: holdingId)
-                            await loadHoldings()
-                        }
+            AccountHoldingsSection(
+                holdings: holdings,
+                currencyCode: subAccount.currencyCode,
+                isLoading: isLoadingHoldings,
+                onDeleteHolding: { holdingId in
+                    Task {
+                        try? await HoldingService.shared.deleteHolding(id: holdingId)
+                        await loadHoldings()
                     }
-                )
-            }
+                }
+            )
         }
         .padding(12)
         .background(Color.white.opacity(0.03))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.04), lineWidth: 1))
         .task {
-            if isInvestment {
-                await loadHoldings()
-            }
+            await loadHoldings()
         }
     }
 
