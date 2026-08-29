@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D5C8252856A243D3A2EC29EF /* UserProfileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C08B8AD8494413A23698F3 /* UserProfileSheet.swift */; };
 		852B63C4592043BEB318E052 /* ManageGoalAllocationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */; };
 		0C033A5FFD3840519A39F51B /* AddAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333376E4447E4399952EF9D0 /* AddAssetView.swift */; };
 		D2C96EE603BE44BB9305ADCA /* AddSubAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797FD1D88D5A45DDBAAEE2B4 /* AddSubAccountView.swift */; };
@@ -48,6 +49,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		51C08B8AD8494413A23698F3 /* UserProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Auth/UserProfileSheet.swift"; sourceTree = "<group>"; };
 		7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Savings/ManageGoalAllocationsView.swift"; sourceTree = "<group>"; };
 		333376E4447E4399952EF9D0 /* AddAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Accounts/AddAssetView.swift"; sourceTree = "<group>"; };
 		797FD1D88D5A45DDBAAEE2B4 /* AddSubAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Accounts/AddSubAccountView.swift"; sourceTree = "<group>"; };
@@ -111,6 +113,7 @@
 		A100000000000000000000002 /* FinanceTrackerSwift */ = {
 			isa = PBXGroup;
 			children = (
+				51C08B8AD8494413A23698F3 /* UserProfileSheet.swift */,
 				7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */,
 				28F644C766B54C2680A5F7E0 /* HoldingModels.swift */,
 				5EFCF266F91E4AB7BBDE5472 /* HoldingService.swift */,
@@ -230,6 +233,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D5C8252856A243D3A2EC29EF /* UserProfileSheet.swift in Sources */,
 				852B63C4592043BEB318E052 /* ManageGoalAllocationsView.swift in Sources */,
 				0C033A5FFD3840519A39F51B /* AddAssetView.swift in Sources */,
 				D2C96EE603BE44BB9305ADCA /* AddSubAccountView.swift in Sources */,

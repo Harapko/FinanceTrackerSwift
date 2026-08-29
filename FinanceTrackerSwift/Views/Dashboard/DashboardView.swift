@@ -45,6 +45,8 @@ struct DashboardView: View {
     @Environment(\.selectedTab) private var selectedTab
     @State private var viewModel = DashboardViewModel()
     @State private var showAddTransaction = false
+    @State private var showProfileSheet = false
+    @State private var showLogoutConfirmation = false
     @State private var currencyCode: String = "USD"
 
     let availableCurrencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "CHF"]
@@ -55,6 +57,7 @@ struct DashboardView: View {
                 // Header
                 DashboardHeaderCard(
                     greeting: "Good \(timeOfDay), \(auth.currentUser?.firstName ?? "Trader")",
+                    userInitial: auth.currentUser?.firstName.prefix(1).uppercased() ?? "U",
                     currencyCode: $currencyCode,
                     availableCurrencies: availableCurrencies,
                     isRefreshing: viewModel.isRefreshing,
@@ -63,6 +66,12 @@ struct DashboardView: View {
                     },
                     onAddTransaction: {
                         showAddTransaction = true
+                    },
+                    onOpenProfile: {
+                        showProfileSheet = true
+                    },
+                    onLogout: {
+                        showLogoutConfirmation = true
                     }
                 )
 
@@ -115,25 +124,62 @@ struct DashboardView: View {
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
         .navigationTitle("Dashboard")
-        .refreshable {
-            await viewModel.load(currencyCode: currencyCode, isManualRefresh: true)
-        }
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showAddTransaction = true
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    if let user = auth.currentUser {
+                        Section(user.fullName) {
+                            Text(user.email).font(.caption)
+                        }
+                    }
+                    Button {
+                        showProfileSheet = true
+                    } label: {
+                        Label("Profile & Settings", systemImage: "person.crop.circle")
+                    }
+                    Divider()
+                    Button(role: .destructive) {
+                        showLogoutConfirmation = true
+                    } label: {
+                        Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                                        startPoint: .leading, endPoint: .trailing))
-                        .font(.title3)
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 32, height: 32)
+                        Text(auth.currentUser?.firstName.prefix(1).uppercased() ?? "U")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                    }
                 }
             }
+        }
+        .refreshable {
+            await viewModel.load(currencyCode: currencyCode, isManualRefresh: true)
         }
         .sheet(isPresented: $showAddTransaction, onDismiss: {
             Task { await viewModel.load(currencyCode: currencyCode) }
         }) {
             AddTransactionView(onSuccess: {})
+        }
+        .sheet(isPresented: $showProfileSheet) {
+            UserProfileSheet()
+        }
+        .confirmationDialog(
+            "Log Out",
+            isPresented: $showLogoutConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Log Out", role: .destructive) {
+                auth.logout()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to log out of your account?")
         }
         .task {
             let code = auth.currentUser?.defaultCurrencyCode ?? "USD"
@@ -159,11 +205,14 @@ struct DashboardView: View {
 // MARK: - Dashboard Header Card
 struct DashboardHeaderCard: View {
     let greeting: String
+    let userInitial: String
     @Binding var currencyCode: String
     let availableCurrencies: [String]
     let isRefreshing: Bool
     let onRefresh: () -> Void
     let onAddTransaction: () -> Void
+    var onOpenProfile: () -> Void = {}
+    var onLogout: () -> Void = {}
 
     var body: some View {
         HStack(alignment: .center) {
@@ -243,11 +292,17 @@ struct DashboardHeaderCard: View {
                 }
             }
         }
-        .padding(.horizontal, 4)
+        .padding(18)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 
-// MARK: - Dashboard Stats Overview (4 Cards matching React)
+// MARK: - Stats Overview (4 Cards)
 struct DashboardStatsOverviewView: View {
     let stats: DashboardStatsResponse
 
