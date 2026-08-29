@@ -2,8 +2,8 @@ import SwiftUI
 
 struct AddSavingsGoalView: View {
     @Environment(\.dismiss) private var dismiss
-    let editingGoal: SavingsGoalResponse?
-    let onSuccess: () -> Void
+    var editingGoal: SavingsGoalResponse? = nil
+    var onSuccess: () -> Void = {}
 
     @State private var name = ""
     @State private var targetAmount = ""
@@ -15,9 +15,9 @@ struct AddSavingsGoalView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    let iconOptions = ["🎯", "🏠", "✈️", "🚗", "📚", "💪", "🎸", "💍", "🌴", "💻"]
+    let iconOptions = ["🎯", "🏠", "✈️", "🚗", "📚", "💪", "🎸", "💍", "🌴", "💻", "🪙", "📈"]
     let colorOptions = ["#818cf8", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#fb923c", "#e879f9"]
-    let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "AUD"]
+    let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "AUD", "CHF"]
 
     var isEditing: Bool { editingGoal != nil }
     var title: String { isEditing ? "Edit Goal" : "New Savings Goal" }
@@ -129,12 +129,12 @@ struct AddSavingsGoalView: View {
             if let g = editingGoal {
                 let payload = UpdateSavingsGoalPayload(name: name, targetAmount: amount, currencyCode: currencyCode,
                     deadline: deadline.isEmpty ? nil : deadline, description: description.isEmpty ? nil : description,
-                    icon: icon, color: color, accountId: nil, subAccountId: nil)
+                    icon: icon, color: color, accountId: nil, subAccountId: nil, instrumentId: nil)
                 let _: SavingsGoalResponse = try await SavingsGoalService.shared.updateGoal(id: g.id, payload: payload)
             } else {
                 let payload = CreateSavingsGoalPayload(name: name, targetAmount: amount, currencyCode: currencyCode,
                     deadline: deadline.isEmpty ? nil : deadline, description: description.isEmpty ? nil : description,
-                    icon: icon, color: color, accountId: nil, subAccountId: nil)
+                    icon: icon, color: color, accountId: nil, subAccountId: nil, instrumentId: nil)
                 let _: SavingsGoalResponse = try await SavingsGoalService.shared.createGoal(payload)
             }
             onSuccess(); dismiss()

@@ -4,10 +4,32 @@ import SwiftUI
 class SavingsViewModel {
     var goals: [SavingsGoalResponse] = []
     var isLoading = false
+    var isRefreshing = false
     var errorMessage: String?
 
-    func load() async {
-        isLoading = true; errorMessage = nil; defer { isLoading = false }
+    var totalSaved: Double {
+        goals.reduce(0) { $0 + $1.currentAmount }
+    }
+
+    var totalTarget: Double {
+        goals.reduce(0) { $0 + $1.targetAmount }
+    }
+
+    var overallProgress: Double {
+        totalTarget > 0 ? min(totalSaved / totalTarget, 1.0) : 0
+    }
+
+    func load(isManualRefresh: Bool = false) async {
+        if isManualRefresh {
+            isRefreshing = true
+        } else if goals.isEmpty {
+            isLoading = true
+        }
+        errorMessage = nil
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
         do {
             goals = try await SavingsGoalService.shared.getGoals()
         } catch {
@@ -16,76 +38,169 @@ class SavingsViewModel {
     }
 
     func delete(id: String) async {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            goals.removeAll { $0.id == id }
+        }
         do {
             try await SavingsGoalService.shared.deleteGoal(id: id)
-            await load()
         } catch {
             errorMessage = error.localizedDescription
+            await load()
+        }
+    }
+}
+
+enum SavingsModalSheet: Identifiable {
+    case addGoal
+    case editGoal(SavingsGoalResponse)
+    case contribute(SavingsGoalResponse)
+    case manageAllocations(goalId: String)
+
+    var id: String {
+        switch self {
+        case .addGoal: return "addGoal"
+        case .editGoal(let g): return "editGoal-\(g.id)"
+        case .contribute(let g): return "contribute-\(g.id)"
+        case .manageAllocations(let id): return "manageAllocations-\(id)"
         }
     }
 }
 
 struct SavingsView: View {
     @State private var viewModel = SavingsViewModel()
-    @State private var showAddGoal = false
-    @State private var editingGoal: SavingsGoalResponse? = nil
-    @State private var contributeGoal: SavingsGoalResponse? = nil
+    @State private var activeSheet: SavingsModalSheet? = nil
+    @State private var goalToDelete: SavingsGoalResponse? = nil
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Header
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text("Savings Goals")
                             .font(.largeTitle.bold())
                             .foregroundColor(.white)
-                        Text("\(viewModel.goals.count) active goals")
+                        Text("\(viewModel.goals.count) goals • Saved: \(viewModel.totalSaved.formatted(currencyCode: "USD"))")
                             .font(.caption)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
+
                     Spacer()
-                    Button { showAddGoal = true } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                                            startPoint: .leading, endPoint: .trailing))
-                            .font(.title3)
+
+                    Button {
+                        activeSheet = .addGoal
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.caption.bold())
+                            Text("New Goal")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(LinearGradient(
+                            colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                            startPoint: .leading, endPoint: .trailing
+                        ))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                 }
                 .padding(.horizontal, 4)
 
-                if viewModel.isLoading {
+                // Error Banner
+                if let error = viewModel.errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error).font(.caption)
+                    }
+                    .foregroundColor(Color(hex: "f87171"))
+                    .padding(12)
+                    .background(Color(hex: "f87171").opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                // Overall Progress Card
+                if !viewModel.goals.isEmpty && viewModel.totalTarget > 0 {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("Total Savings Progress")
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(Color.white.opacity(0.6))
+                            Spacer()
+                            Text(String(format: "%.0f%%", viewModel.overallProgress * 100))
+                                .font(.caption.bold())
+                                .foregroundColor(Color(hex: "34d399"))
+                        }
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.white.opacity(0.08))
+                                    .frame(height: 6)
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(LinearGradient(
+                                        colors: [Color(hex: "34d399"), Color(hex: "818cf8")],
+                                        startPoint: .leading, endPoint: .trailing
+                                    ))
+                                    .frame(width: geo.size.width * viewModel.overallProgress, height: 6)
+                            }
+                        }
+                        .frame(height: 6)
+
+                        HStack {
+                            Text(viewModel.totalSaved.formatted(currencyCode: "USD"))
+                                .font(.caption2.bold())
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text("Target: \(viewModel.totalTarget.formatted(currencyCode: "USD"))")
+                                .font(.caption2)
+                                .foregroundColor(Color.white.opacity(0.5))
+                        }
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.03))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+
+                // Goals List
+                if viewModel.isLoading && viewModel.goals.isEmpty {
                     ProgressView().tint(Color(hex: "a78bfa")).padding(.vertical, 40)
                 } else if viewModel.goals.isEmpty {
-                    VStack(spacing: 14) {
-                        Image(systemName: "target").font(.system(size: 52)).foregroundColor(Color.white.opacity(0.2))
-                        Text("No savings goals yet").font(.headline).foregroundColor(Color.white.opacity(0.4))
-                        Text("Set a goal and track your progress toward it!")
-                            .font(.subheadline).foregroundColor(Color.white.opacity(0.3)).multilineTextAlignment(.center)
-                        Button("Create First Goal") { showAddGoal = true }
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20).padding(.vertical, 10)
-                            .background(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                                       startPoint: .leading, endPoint: .trailing))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    VStack(spacing: 12) {
+                        Image(systemName: "target")
+                            .font(.system(size: 48))
+                            .foregroundColor(Color.white.opacity(0.2))
+                        Text("No savings goals yet")
+                            .font(.headline)
+                            .foregroundColor(Color.white.opacity(0.4))
+                        Button("Create Your First Goal") {
+                            activeSheet = .addGoal
+                        }
+                        .foregroundColor(Color(hex: "a78bfa"))
+                        .font(.subheadline.bold())
                     }
                     .padding(.vertical, 60)
                 } else {
-                    LazyVGrid(columns: [GridItem(.flexible())], spacing: 16) {
+                    LazyVStack(spacing: 16) {
                         ForEach(viewModel.goals) { goal in
-                            SavingsGoalCardView(goal: goal) {
-                                editingGoal = goal
-                            } onContribute: {
-                                contributeGoal = goal
-                            }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    Task { await viewModel.delete(id: goal.id) }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
+                            SavingsGoalCardView(
+                                goal: goal,
+                                onEdit: {
+                                    activeSheet = .editGoal(goal)
+                                },
+                                onContribute: {
+                                    activeSheet = .contribute(goal)
+                                },
+                                onManageAllocations: {
+                                    activeSheet = .manageAllocations(goalId: goal.id)
+                                },
+                                onDelete: {
+                                    goalToDelete = goal
+                                    showDeleteConfirmation = true
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -94,21 +209,47 @@ struct SavingsView: View {
             .padding(.vertical, 12)
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
-        .sheet(isPresented: $showAddGoal, onDismiss: {
-            Task { await viewModel.load() }
-        }) {
-            AddSavingsGoalView(editingGoal: nil, onSuccess: {})
+        .refreshable {
+            await viewModel.load(isManualRefresh: true)
         }
-        .sheet(item: $editingGoal, onDismiss: {
-            Task { await viewModel.load() }
-        }) { goal in
-            AddSavingsGoalView(editingGoal: goal, onSuccess: {})
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .addGoal:
+                AddSavingsGoalView {
+                    Task { await viewModel.load() }
+                }
+            case .editGoal(let goal):
+                AddSavingsGoalView(editingGoal: goal) {
+                    Task { await viewModel.load() }
+                }
+            case .contribute(let goal):
+                ContributeToGoalView(goal: goal) {
+                    Task { await viewModel.load() }
+                }
+            case .manageAllocations(let goalId):
+                ManageGoalAllocationsView(goalId: goalId) {
+                    Task { await viewModel.load() }
+                }
+            }
         }
-        .sheet(item: $contributeGoal, onDismiss: {
-            Task { await viewModel.load() }
-        }) { goal in
-            ContributeToGoalView(goal: goal, onSuccess: {})
+        .confirmationDialog(
+            "Delete Goal",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Goal", role: .destructive) {
+                if let g = goalToDelete {
+                    Task { await viewModel.delete(id: g.id) }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let g = goalToDelete {
+                Text("Are you sure you want to delete '\(g.name)'?")
+            }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+        }
     }
 }

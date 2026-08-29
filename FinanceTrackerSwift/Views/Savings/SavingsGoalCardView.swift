@@ -2,8 +2,10 @@ import SwiftUI
 
 struct SavingsGoalCardView: View {
     let goal: SavingsGoalResponse
-    let onEdit: () -> Void
-    let onContribute: () -> Void
+    var onEdit: () -> Void = {}
+    var onContribute: () -> Void = {}
+    var onManageAllocations: () -> Void = {}
+    var onDelete: () -> Void = {}
 
     var accentColor: Color {
         Color(hex: goal.color ?? "818cf8")
@@ -15,30 +17,34 @@ struct SavingsGoalCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Top row
+            // Header: Icon, Name, Target, Menu
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(accentColor.opacity(0.2))
-                        .frame(width: 48, height: 48)
+                        .fill(accentColor.opacity(0.18))
+                        .frame(width: 46, height: 46)
                     Text(goal.icon ?? "🎯")
                         .font(.title3)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
                         Text(goal.name)
                             .font(.headline.bold())
                             .foregroundColor(.white)
+                            .lineLimit(1)
+
                         if goal.isCompleted {
-                            Text("✓ Completed")
-                                .font(.caption2.weight(.semibold))
+                            Text("✓ Done")
+                                .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(Color(hex: "34d399"))
-                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
                                 .background(Color(hex: "34d399").opacity(0.15))
                                 .clipShape(Capsule())
                         }
                     }
+
                     if let acc = goal.accountName {
                         Text(acc)
                             .font(.caption)
@@ -49,67 +55,170 @@ struct SavingsGoalCardView: View {
                 Spacer()
 
                 Menu {
-                    Button("Edit Goal", systemImage: "pencil") { onEdit() }
-                    Button("Contribute", systemImage: "plus.circle") { onContribute() }
+                    Button {
+                        onContribute()
+                    } label: {
+                        Label("Contribute", systemImage: "plus.circle")
+                    }
+
+                    Button {
+                        onManageAllocations()
+                    } label: {
+                        Label("Allocations & History", systemImage: "chart.pie")
+                    }
+
+                    Button {
+                        onEdit()
+                    } label: {
+                        Label("Edit Goal", systemImage: "pencil")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Label("Delete Goal", systemImage: "trash")
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .foregroundColor(Color.white.opacity(0.5))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Color.white.opacity(0.4))
                         .padding(8)
-                        .background(Color.white.opacity(0.07))
+                        .background(Color.white.opacity(0.05))
                         .clipShape(Circle())
                 }
             }
 
-            // Progress bar
+            // Description if any
+            if let desc = goal.description, !desc.isEmpty {
+                Text(desc)
+                    .font(.caption)
+                    .foregroundColor(Color.white.opacity(0.6))
+                    .italic()
+            }
+
+            // Saved Instruments / Stock & Crypto Allocation Badges
+            if !goal.savedInstrumentsList.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Label("Assets & Holdings", systemImage: "chart.pie.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(Color.white.opacity(0.5))
+                        Spacer()
+                        Button {
+                            onManageAllocations()
+                        } label: {
+                            Text("Manage")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(Color(hex: "a78bfa"))
+                        }
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(goal.savedInstrumentsList) { inst in
+                                let isGain = (inst.unrealizedPnL ?? 0) >= 0
+                                HStack(spacing: 6) {
+                                    Text(inst.symbol)
+                                        .font(.caption.bold())
+                                        .foregroundColor(.white)
+
+                                    if let pnlPercent = inst.unrealizedPnLPercent {
+                                        Text(String(format: "%+.1f%%", pnlPercent))
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundColor(isGain ? Color(hex: "34d399") : Color(hex: "f87171"))
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                            }
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color.white.opacity(0.02))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+
+            // Progress Section
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(goal.currentAmount.formatted(currencyCode: goal.currencyCode))
-                        .font(.title3.bold())
-                        .foregroundColor(.white)
-                    Spacer()
-                    Text("of \(goal.targetAmount.formatted(currencyCode: goal.currencyCode))")
-                        .font(.subheadline)
-                        .foregroundColor(Color.white.opacity(0.5))
-                }
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white.opacity(0.1))
-                            .frame(height: 8)
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(LinearGradient(colors: [accentColor, accentColor.opacity(0.7)],
-                                                 startPoint: .leading, endPoint: .trailing))
-                            .frame(width: geo.size.width * progressPercent, height: 8)
-                    }
-                }
-                .frame(height: 8)
-
-                HStack {
-                    Text(String(format: "%.1f%% complete", progressPercent * 100))
-                        .font(.caption)
-                        .foregroundColor(Color.white.opacity(0.5))
-                    Spacer()
-                    if let deadline = goal.deadline {
-                        Label(deadline, systemImage: "calendar")
-                            .font(.caption)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(goal.currentAmount.formatted(currencyCode: goal.currencyCode))
+                            .font(.title3.bold())
+                            .foregroundColor(.white)
+                        Text("Saved of \(goal.targetAmount > 0 ? goal.targetAmount.formatted(currencyCode: goal.currencyCode) : "Open Target")")
+                            .font(.caption2)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
+                    Spacer()
+                    if goal.targetAmount > 0 {
+                        Text(String(format: "%.0f%%", progressPercent * 100))
+                            .font(.headline.bold())
+                            .foregroundColor(accentColor)
+                    }
+                }
+
+                if goal.targetAmount > 0 {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.white.opacity(0.08))
+                                .frame(height: 8)
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(LinearGradient(
+                                    colors: [accentColor, Color(hex: "a78bfa")],
+                                    startPoint: .leading, endPoint: .trailing
+                                ))
+                                .frame(width: geo.size.width * progressPercent, height: 8)
+                        }
+                    }
+                    .frame(height: 8)
+                }
+
+                if let deadline = goal.deadline {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .font(.caption2)
+                        Text("Target: \(deadline)")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(Color.white.opacity(0.4))
                 }
             }
 
-            // Contribute button
-            if !goal.isCompleted {
+            // Action Buttons Row
+            HStack(spacing: 8) {
                 Button {
                     onContribute()
                 } label: {
-                    Label("Contribute", systemImage: "plus")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Contribute")
+                    }
+                    .font(.subheadline.bold())
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(LinearGradient(
+                        colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
+                Button {
+                    onManageAllocations()
+                } label: {
+                    Image(systemName: "chart.pie")
+                        .font(.subheadline.bold())
+                        .foregroundColor(Color(hex: "a78bfa"))
+                        .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(LinearGradient(colors: [accentColor, accentColor.opacity(0.7)],
-                                                   startPoint: .leading, endPoint: .trailing))
+                        .background(Color(hex: "a78bfa").opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -119,7 +228,7 @@ struct SavingsGoalCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(accentColor.opacity(0.2), lineWidth: 1)
+                .stroke(accentColor.opacity(0.25), lineWidth: 1.5)
         )
     }
 }

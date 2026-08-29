@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		852B63C4592043BEB318E052 /* ManageGoalAllocationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */; };
 		0C033A5FFD3840519A39F51B /* AddAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333376E4447E4399952EF9D0 /* AddAssetView.swift */; };
 		D2C96EE603BE44BB9305ADCA /* AddSubAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797FD1D88D5A45DDBAAEE2B4 /* AddSubAccountView.swift */; };
 		144DBF51EE7E4609B559A442 /* HoldingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFCF266F91E4AB7BBDE5472 /* HoldingService.swift */; };
@@ -47,6 +48,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Savings/ManageGoalAllocationsView.swift"; sourceTree = "<group>"; };
 		333376E4447E4399952EF9D0 /* AddAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Accounts/AddAssetView.swift"; sourceTree = "<group>"; };
 		797FD1D88D5A45DDBAAEE2B4 /* AddSubAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/Accounts/AddSubAccountView.swift"; sourceTree = "<group>"; };
 		5EFCF266F91E4AB7BBDE5472 /* HoldingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/HoldingService.swift"; sourceTree = "<group>"; };
@@ -109,6 +111,7 @@
 		A100000000000000000000002 /* FinanceTrackerSwift */ = {
 			isa = PBXGroup;
 			children = (
+				7D89CCB0606043849011132E /* ManageGoalAllocationsView.swift */,
 				28F644C766B54C2680A5F7E0 /* HoldingModels.swift */,
 				5EFCF266F91E4AB7BBDE5472 /* HoldingService.swift */,
 				797FD1D88D5A45DDBAAEE2B4 /* AddSubAccountView.swift */,
@@ -227,6 +230,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				852B63C4592043BEB318E052 /* ManageGoalAllocationsView.swift in Sources */,
 				0C033A5FFD3840519A39F51B /* AddAssetView.swift in Sources */,
 				D2C96EE603BE44BB9305ADCA /* AddSubAccountView.swift in Sources */,
 				144DBF51EE7E4609B559A442 /* HoldingService.swift in Sources */,
