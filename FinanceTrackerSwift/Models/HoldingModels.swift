@@ -24,21 +24,33 @@ struct HoldingResponse: Decodable, Identifiable {
 struct InstrumentResponse: Decodable, Identifiable {
     let id: String
     let symbol: String
-    let name: String
-    let type: String
+    let name: String?
+    let type: String?
+    let exchange: String?
     let currencyCode: String?
+    let latestPrice: Double?
     let currentPrice: Double?
     let logoUrl: String?
+
+    var resolvedPrice: Double {
+        latestPrice ?? currentPrice ?? 0.0
+    }
 }
 
 struct MarketQuote: Decodable {
     let symbol: String
     let name: String?
-    let currentPrice: Double
+    let price: Double?
+    let currentPrice: Double?
     let currencyCode: String?
     let change: Double?
     let changePercent: Double?
     let type: String?
+    let provider: String?
+
+    var resolvedPrice: Double {
+        price ?? currentPrice ?? 0.0
+    }
 }
 
 struct CreateInstrumentTransactionPayload: Encodable {

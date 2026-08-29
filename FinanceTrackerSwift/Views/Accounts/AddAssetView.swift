@@ -10,8 +10,9 @@ struct AddAssetView: View {
     @State private var selectedAccountId = ""
     @State private var selectedSubAccountId = ""
 
+    @State private var tradeType = "Buy"
+    @State private var instrumentType = "Stock"
     @State private var symbol = ""
-    @State private var instrumentType = "Crypto"
     @State private var quantity = ""
     @State private var pricePerUnit = ""
     @State private var fee = "0"
@@ -25,8 +26,14 @@ struct AddAssetView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    let types = ["Crypto", "Stock"]
-    let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "CAD", "CHF"]
+    let tradeTypes = ["Buy", "Sell"]
+    let instrumentTypes = ["Stock", "Crypto"]
+    let stockSuggestions = ["VOO", "SPY", "AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "AMZN"]
+    let cryptoSuggestions = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]
+
+    var activeSymbol: String {
+        symbol.trimmingCharacters(in: .whitespaces).uppercased()
+    }
 
     var selectedAccount: AccountResponse? {
         accounts.first { $0.id == selectedAccountId }
@@ -49,10 +56,18 @@ struct AddAssetView: View {
                 Color(hex: "0d1117").ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 20) {
-                        // Instrument Type
-                        Picker("Type", selection: $instrumentType) {
-                            ForEach(types, id: \.self) { t in
+                    VStack(spacing: 18) {
+                        // Trade Type (Buy / Sell)
+                        Picker("Trade Type", selection: $tradeType) {
+                            ForEach(tradeTypes, id: \.self) { t in
+                                Text(t).tag(t)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        // Instrument Type (Stock / Crypto)
+                        Picker("Instrument Type", selection: $instrumentType) {
+                            ForEach(instrumentTypes, id: \.self) { t in
                                 Text(t).tag(t)
                             }
                         }
@@ -63,8 +78,9 @@ struct AddAssetView: View {
                             Label("Asset Symbol", systemImage: "magnifyingglass")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
-                            HStack {
-                                TextField("e.g. BTC, AAPL, ETH", text: $symbol)
+
+                            HStack(spacing: 8) {
+                                TextField(instrumentType == "Crypto" ? "e.g. BTC, ETH, SOL" : "e.g. VOO, AAPL, NVDA", text: $symbol)
                                     .textInputAutocapitalization(.characters)
                                     .autocorrectionDisabled()
                                     .textFieldStyle(.plain)
@@ -76,38 +92,93 @@ struct AddAssetView: View {
                                     Button {
                                         Task { await fetchQuote() }
                                     } label: {
-                                        Text("Quote")
-                                            .font(.caption.weight(.bold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 6)
-                                            .background(Color(hex: "818cf8"))
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "bolt.fill")
+                                                .font(.system(size: 10))
+                                            Text("Quote")
+                                                .font(.caption.weight(.bold))
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 7)
+                                        .background(Color(hex: "818cf8"))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
-                                    .disabled(symbol.trimmingCharacters(in: .whitespaces).isEmpty)
+                                    .disabled(activeSymbol.isEmpty)
                                 }
                             }
                             .padding(14)
                             .background(Color.white.opacity(0.07))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
 
+                            // Quick Suggestions
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(instrumentType == "Crypto" ? cryptoSuggestions : stockSuggestions, id: \.self) { sug in
+                                        Button {
+                                            symbol = sug
+                                            Task { await fetchQuote() }
+                                        } label: {
+                                            Text(sug)
+                                                .font(.caption2.bold())
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(activeSymbol == sug ? Color(hex: "818cf8").opacity(0.3) : Color.white.opacity(0.06))
+                                                .foregroundColor(activeSymbol == sug ? Color(hex: "a78bfa") : Color.white.opacity(0.7))
+                                                .clipShape(Capsule())
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 2)
+
+                            // Live Quote Preview Banner
                             if let quote = liveQuote {
                                 HStack {
-                                    Text("\(quote.symbol): \(quote.currentPrice.formatted(currencyCode: quote.currencyCode ?? currencyCode))")
-                                        .font(.caption.bold())
-                                        .foregroundColor(Color(hex: "34d399"))
-                                    Spacer()
-                                    Button("Use Price") {
-                                        pricePerUnit = String(format: "%.4f", quote.currentPrice)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(quote.name ?? quote.symbol)
+                                            .font(.caption.weight(.bold))
+                                            .foregroundColor(.white)
+                                            .lineLimit(1)
+                                        HStack(spacing: 6) {
+                                            Text(quote.resolvedPrice.formatted(currencyCode: quote.currencyCode ?? currencyCode))
+                                                .font(.subheadline.bold())
+                                                .foregroundColor(Color(hex: "34d399"))
+
+                                            if let changePercent = quote.changePercent {
+                                                let isGain = changePercent >= 0
+                                                Text(String(format: "%+.2f%%", changePercent))
+                                                    .font(.caption2.bold())
+                                                    .foregroundColor(isGain ? Color(hex: "34d399") : Color(hex: "f87171"))
+                                            }
+                                        }
                                     }
-                                    .font(.caption2.bold())
-                                    .foregroundColor(Color(hex: "a78bfa"))
+
+                                    Spacer()
+
+                                    Button {
+                                        pricePerUnit = String(format: "%.4f", quote.resolvedPrice)
+                                        if let cur = quote.currencyCode, !cur.isEmpty {
+                                            currencyCode = cur
+                                        }
+                                    } label: {
+                                        Text("Use Price")
+                                            .font(.caption.bold())
+                                            .foregroundColor(Color(hex: "a78bfa"))
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 5)
+                                            .background(Color(hex: "a78bfa").opacity(0.12))
+                                            .clipShape(Capsule())
+                                    }
                                 }
-                                .padding(.horizontal, 4)
+                                .padding(12)
+                                .background(Color(hex: "34d399").opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: "34d399").opacity(0.2), lineWidth: 1))
                             }
                         }
 
-                        // Account Picker
+                        // Destination Account
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Destination Account", systemImage: "building.columns")
                                 .font(.caption.weight(.semibold))
@@ -126,14 +197,14 @@ struct AddAssetView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
-                        // Sub-Account Picker (if account has sub-accounts)
+                        // Sub-Account (if available)
                         if !availableSubAccounts.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Label("Sub-Account (Optional)", systemImage: "square.grid.2x2")
                                     .font(.caption.weight(.semibold))
                                     .foregroundColor(Color.white.opacity(0.6))
                                 Picker("Sub-Account", selection: $selectedSubAccountId) {
-                                    Text("None (Direct to Account)").tag("")
+                                    Text("Direct to Account").tag("")
                                     ForEach(availableSubAccounts) { s in
                                         Text("\(s.name) (\(s.currencyCode))").tag(s.id)
                                     }
@@ -150,69 +221,56 @@ struct AddAssetView: View {
                         // Quantity & Price Row
                         HStack(spacing: 12) {
                             formField("Quantity", icon: "number") {
-                                TextField("0.00", text: $quantity)
+                                TextField("e.g. 1.5", text: $quantity)
                                     .keyboardType(.decimalPad)
                             }
 
-                            formField("Price / Unit", icon: "dollarsign.circle") {
+                            formField("Price / Unit (\(currencyCode))", icon: "dollarsign.circle") {
                                 TextField("0.00", text: $pricePerUnit)
                                     .keyboardType(.decimalPad)
                             }
                         }
 
-                        // Currency & Fee
+                        // Fee & Date Row
                         HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("Currency", systemImage: "coloncurrencysign.circle")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Menu {
-                                    ForEach(currencies, id: \.self) { c in
-                                        Button(c) { currencyCode = c }
-                                    }
-                                } label: {
-                                    HStack {
-                                        Text(currencyCode)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .font(.caption2)
-                                            .foregroundColor(Color(hex: "a78bfa"))
-                                    }
-                                    .padding(14)
-                                    .background(Color.white.opacity(0.07))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                            }
-
                             formField("Fee", icon: "percent") {
                                 TextField("0.00", text: $fee)
                                     .keyboardType(.decimalPad)
                             }
-                        }
 
-                        // Total Estimated Cost preview
-                        if totalCost > 0 {
-                            HStack {
-                                Text("Total Cost:")
-                                    .font(.subheadline)
-                                    .foregroundColor(Color.white.opacity(0.7))
-                                Spacer()
-                                Text(totalCost.formatted(currencyCode: currencyCode))
-                                    .font(.headline.bold())
-                                    .foregroundColor(Color(hex: "34d399"))
+                            formField("Date", icon: "calendar") {
+                                TextField("YYYY-MM-DD", text: $date)
                             }
-                            .padding(14)
-                            .background(Color.white.opacity(0.04))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
                         // Notes
                         formField("Notes (optional)", icon: "text.alignleft") {
-                            TextField("Transaction notes...", text: $notes)
+                            TextField("e.g. Vanguard ETF purchase, DCA...", text: $notes)
                         }
 
+                        // Total Cost Card
+                        if totalCost > 0 {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Estimated Total:")
+                                        .font(.caption)
+                                        .foregroundColor(Color.white.opacity(0.6))
+                                    Text("\(quantity) × \(pricePerUnit) \(currencyCode)")
+                                        .font(.caption2)
+                                        .foregroundColor(Color.white.opacity(0.4))
+                                }
+                                Spacer()
+                                Text(totalCost.formatted(currencyCode: currencyCode))
+                                    .font(.title3.bold())
+                                    .foregroundColor(tradeType == "Buy" ? Color(hex: "34d399") : Color(hex: "f87171"))
+                            }
+                            .padding(14)
+                            .background(Color.white.opacity(0.04))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
+                        }
+
+                        // Error Banner
                         if let error = errorMessage {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -232,27 +290,28 @@ struct AddAssetView: View {
                                 if isLoading {
                                     ProgressView().tint(.white)
                                 } else {
-                                    Text("Buy / Add Asset")
-                                        .font(.headline)
+                                    Text("\(tradeType) \(activeSymbol.isEmpty ? "Asset" : activeSymbol)")
+                                        .font(.headline.bold())
                                         .foregroundColor(.white)
                                 }
                             }
                             .frame(maxWidth: .infinity)
                             .padding(16)
                             .background(
-                                LinearGradient(
-                                    colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
+                                tradeType == "Buy" ?
+                                    LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                                   startPoint: .leading, endPoint: .trailing) :
+                                    LinearGradient(colors: [Color(hex: "f87171"), Color(hex: "ef4444")],
+                                                   startPoint: .leading, endPoint: .trailing)
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
-                        .disabled(isLoading || symbol.trimmingCharacters(in: .whitespaces).isEmpty || quantity.isEmpty || pricePerUnit.isEmpty || selectedAccountId.isEmpty)
+                        .disabled(isLoading || activeSymbol.isEmpty || quantity.isEmpty || pricePerUnit.isEmpty || selectedAccountId.isEmpty)
                     }
                     .padding(20)
                 }
             }
-            .navigationTitle("Buy / Add Asset")
+            .navigationTitle("\(tradeType) Asset")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -291,7 +350,7 @@ struct AddAssetView: View {
     }
 
     private func fetchQuote() async {
-        let sym = symbol.trimmingCharacters(in: .whitespaces).uppercased()
+        let sym = activeSymbol
         guard !sym.isEmpty else { return }
         isFetchingQuote = true
         errorMessage = nil
@@ -299,7 +358,7 @@ struct AddAssetView: View {
         do {
             let quote = try await HoldingService.shared.getLiveQuote(symbol: sym, type: instrumentType)
             liveQuote = quote
-            pricePerUnit = String(format: "%.4f", quote.currentPrice)
+            pricePerUnit = String(format: "%.4f", quote.resolvedPrice)
             if let cur = quote.currencyCode, !cur.isEmpty {
                 currencyCode = cur
             }
@@ -309,7 +368,7 @@ struct AddAssetView: View {
     }
 
     private func save() async {
-        let sym = symbol.trimmingCharacters(in: .whitespaces).uppercased()
+        let sym = activeSymbol
         guard !sym.isEmpty,
               let qty = Double(quantity), qty > 0,
               let price = Double(pricePerUnit), price > 0,
@@ -322,17 +381,17 @@ struct AddAssetView: View {
             // 1. Ensure instrument exists on backend
             let instrument = try await HoldingService.shared.ensureInstrument(symbol: sym, type: instrumentType)
 
-            // 2. Post instrument purchase transaction
+            // 2. Post instrument transaction
             let payload = CreateInstrumentTransactionPayload(
                 instrumentId: instrument.id,
-                type: "Buy",
+                type: tradeType,
                 quantity: qty,
                 pricePerUnit: price,
                 subAccountId: selectedSubAccountId.isEmpty ? nil : selectedSubAccountId,
                 fee: Double(fee) ?? 0,
                 currencyCode: currencyCode,
                 date: date,
-                time: time,
+                time: time.isEmpty ? "12:00:00" : time,
                 notes: notes.isEmpty ? nil : notes
             )
             try await HoldingService.shared.createInstrumentTransaction(
