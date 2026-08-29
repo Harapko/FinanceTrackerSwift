@@ -12,14 +12,14 @@ struct AddTransactionView: View {
     var onSuccess: () -> Void = {}
 
     @State private var transactionType: TransactionType = .expense
-    @State private var amount: String = "0"
+    @State private var amount: String = ""
     @State private var currencyCode: String = "UAH"
     @State private var selectedAccountId: String = ""
     @State private var selectedCategoryId: String = "health"
     @State private var selectedDateOption: Int = 0 // 0: today, 1: yesterday, 2: two days ago, 3: custom
     @State private var customDate: Date = Date()
     @State private var showDatePicker = false
-    @State private var showAccountPicker = false
+    @State private var showAccountPickerSheet = false
     @State private var tags: [String] = []
     @State private var showAddTagPrompt = false
     @State private var newTagText = ""
@@ -32,7 +32,7 @@ struct AddTransactionView: View {
 
     let availableCurrencies = ["UAH", "USD", "EUR", "GBP", "PLN", "CAD", "CHF"]
 
-    // Default 8 Category items matching Screenshot 4
+    // 8 Category items matching Screenshot 4
     let defaultCategories: [CategoryItem] = [
         CategoryItem(id: "health", name: "Health", icon: "heart.fill", color: "#ef4444"),
         CategoryItem(id: "leisure", name: "Leisure", icon: "wallet.pass.fill", color: "#06b6d4"),
@@ -100,10 +100,10 @@ struct AddTransactionView: View {
 
                                 TextField("0", text: $amount)
                                     .keyboardType(.decimalPad)
-                                    .font(.system(size: 42, weight: .semibold, design: .rounded))
+                                    .font(.system(size: 42, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.trailing)
-                                    .frame(maxWidth: 180)
+                                    .frame(minWidth: 80, maxWidth: 200)
 
                                 Menu {
                                     ForEach(availableCurrencies, id: \.self) { c in
@@ -120,10 +120,16 @@ struct AddTransactionView: View {
                                     }
                                 }
 
-                                Image(systemName: "plus.forwardslash.minus")
-                                    .font(.system(size: 22))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                    .padding(.leading, 6)
+                                Button {
+                                    if amount.isEmpty || amount == "0" {
+                                        amount = "100"
+                                    }
+                                } label: {
+                                    Image(systemName: "plus.forwardslash.minus")
+                                        .font(.system(size: 22))
+                                        .foregroundColor(Color.white.opacity(0.6))
+                                        .padding(.leading, 6)
+                                }
 
                                 Spacer()
                             }
@@ -131,7 +137,7 @@ struct AddTransactionView: View {
 
                             Rectangle()
                                 .fill(Color.white.opacity(0.18))
-                                .frame(width: 220, height: 1)
+                                .frame(width: 240, height: 1.5)
                         }
 
                         // 3. Account Selector
@@ -147,7 +153,7 @@ struct AddTransactionView: View {
                                         currencyCode = acc.currencyCode
                                     } label: {
                                         HStack {
-                                            Text(acc.name)
+                                            Text("\(acc.name) (\(acc.currencyCode))")
                                             if selectedAccountId == acc.id {
                                                 Image(systemName: "checkmark")
                                             }
@@ -156,14 +162,15 @@ struct AddTransactionView: View {
                                 }
                             } label: {
                                 HStack {
-                                    Text(selectedAccount?.name ?? "Not selected")
+                                    Text(selectedAccount?.name ?? (accounts.first?.name ?? "Select Account"))
                                         .font(.subheadline.weight(.semibold))
-                                        .foregroundColor(selectedAccount != nil ? Color(hex: "34d399") : Color(hex: "34d399"))
+                                        .foregroundColor(Color(hex: "34d399"))
                                     Spacer()
                                     Image(systemName: "chevron.up.chevron.down")
                                         .font(.caption2)
-                                        .foregroundColor(Color.white.opacity(0.3))
+                                        .foregroundColor(Color.white.opacity(0.4))
                                 }
+                                .padding(.vertical, 4)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -190,7 +197,7 @@ struct AddTransactionView: View {
                                                         Circle()
                                                             .stroke(Color.white, lineWidth: selectedCategoryId == cat.id ? 3 : 0)
                                                     )
-                                                    .shadow(color: selectedCategoryId == cat.id ? Color(hex: cat.color).opacity(0.5) : Color.clear, radius: 8)
+                                                    .shadow(color: selectedCategoryId == cat.id ? Color(hex: cat.color).opacity(0.6) : Color.clear, radius: 8)
 
                                                 Image(systemName: cat.icon)
                                                     .font(.system(size: 22, weight: .bold))
@@ -322,36 +329,43 @@ struct AddTransactionView: View {
                             .padding(.horizontal, 20)
                         }
 
-                        // 9. Bottom Add / Save Button (Golden / Emerald Curved style)
-                        Button {
-                            Task { await save() }
-                        } label: {
-                            Group {
-                                if isLoading {
-                                    ProgressView().tint(.black)
-                                } else {
-                                    Text("Add")
-                                        .font(.headline.bold())
-                                        .foregroundColor(Color(hex: "0e1711"))
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(16)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: "fbbf24"), Color(hex: "f59e0b")],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
-                            .shadow(color: Color(hex: "f59e0b").opacity(0.3), radius: 10, x: 0, y: 5)
-                        }
-                        .disabled(isLoading || (Double(amount) ?? 0) <= 0 || selectedAccountId.isEmpty)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 10)
-                        .padding(.bottom, 20)
+                        // Bottom breathing room for safe area
+                        Spacer().frame(height: 80)
                     }
                 }
+            }
+            .safeAreaInset(edge: .bottom) {
+                // Floating Bottom Add Button (Always Clean & Visible)
+                VStack(spacing: 0) {
+                    Divider().background(Color.white.opacity(0.06))
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        Group {
+                            if isLoading {
+                                ProgressView().tint(.black)
+                            } else {
+                                Text("Add")
+                                    .font(.headline.bold())
+                                    .foregroundColor(Color(hex: "0e1711"))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(16)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "fbbf24"), Color(hex: "f59e0b")],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .shadow(color: Color(hex: "f59e0b").opacity(0.35), radius: 10, x: 0, y: 5)
+                    }
+                    .disabled(isLoading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                }
+                .background(Color(hex: "0e1711").opacity(0.95))
             }
             .navigationTitle("Add Transactions")
             .navigationBarTitleDisplayMode(.inline)
@@ -398,7 +412,7 @@ struct AddTransactionView: View {
             .task {
                 do {
                     accounts = try await AccountService.shared.getAccounts()
-                    if let first = accounts.first {
+                    if selectedAccountId.isEmpty, let first = accounts.first {
                         selectedAccountId = first.id
                         currencyCode = first.currencyCode
                     }
@@ -451,7 +465,31 @@ struct AddTransactionView: View {
 
     // MARK: - Save
     private func save() async {
-        guard let amt = Double(amount), amt > 0, !selectedAccountId.isEmpty else { return }
+        // Auto-select account if empty
+        var targetAccountId = selectedAccountId
+        if targetAccountId.isEmpty {
+            if let first = accounts.first {
+                targetAccountId = first.id
+                selectedAccountId = first.id
+            } else {
+                // Fetch accounts
+                if let accs = try? await AccountService.shared.getAccounts(), let first = accs.first {
+                    accounts = accs
+                    targetAccountId = first.id
+                    selectedAccountId = first.id
+                }
+            }
+        }
+
+        guard !targetAccountId.isEmpty else {
+            errorMessage = "Please create or select an Account first."
+            return
+        }
+
+        guard let amt = Double(amount), amt > 0 else {
+            errorMessage = "Please enter an amount greater than 0."
+            return
+        }
 
         isLoading = true
         errorMessage = nil
@@ -461,7 +499,7 @@ struct AddTransactionView: View {
         let mappedCat = categories.first { $0.name.lowercased() == selectedCategoryId.lowercased() } ?? categories.first
 
         let payload = CreateTransactionPayload(
-            accountId: selectedAccountId,
+            accountId: targetAccountId,
             subAccountId: nil,
             categoryId: mappedCat?.id,
             type: transactionType.rawValue,
