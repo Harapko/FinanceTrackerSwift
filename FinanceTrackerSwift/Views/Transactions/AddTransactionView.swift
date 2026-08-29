@@ -2,26 +2,24 @@ import SwiftUI
 
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
-    let onSuccess: () -> Void
+    var onSuccess: () -> Void = {}
 
-    @State private var accounts: [AccountResponse] = []
-    @State private var categories: [CategoryResponse] = []
-    @State private var selectedAccountId = ""
-    @State private var selectedCategoryId = ""
     @State private var type: TransactionType = .expense
     @State private var amount = ""
+    @State private var currencyCode = "USD"
+    @State private var selectedAccountId = ""
+    @State private var selectedCategoryId = ""
     @State private var payee = ""
-    @State private var description = ""
     @State private var date = ""
     @State private var time = ""
-    @State private var currencyCode = "USD"
+    @State private var description = ""
+    @State private var accounts: [AccountResponse] = []
+    @State private var categories: [CategoryResponse] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
 
     var filteredCategories: [CategoryResponse] {
-        categories.filter { cat in
-            cat.type == "Both" || cat.type == type.rawValue
-        }
+        categories.filter { $0.type == nil || $0.type == type.rawValue }
     }
 
     var body: some View {
@@ -42,10 +40,15 @@ struct AddTransactionView: View {
                                         .foregroundColor(type == t ? .white : Color.white.opacity(0.4))
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 10)
-                                        .background(type == t ?
-                                            LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                                           startPoint: .leading, endPoint: .trailing) :
-                                            LinearGradient(colors: [Color.clear], startPoint: .leading, endPoint: .trailing)
+                                        .background(
+                                            Group {
+                                                if type == t {
+                                                    LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                                                   startPoint: .leading, endPoint: .trailing)
+                                                } else {
+                                                    Color.clear
+                                                }
+                                            }
                                         )
                                 }
                             }
@@ -163,14 +166,14 @@ struct AddTransactionView: View {
         let payload = CreateTransactionPayload(
             accountId: selectedAccountId,
             subAccountId: nil,
-            categoryId: selectedCategoryId,
+            categoryId: selectedCategoryId.isEmpty ? nil : selectedCategoryId,
             type: type.rawValue,
             amount: amountDouble,
             currencyCode: acc?.currencyCode ?? currencyCode,
             description: description.isEmpty ? nil : description,
             date: date,
             time: time.isEmpty ? "12:00" : time,
-            payee: payee
+            payee: payee.isEmpty ? nil : payee
         )
         isLoading = true
         errorMessage = nil

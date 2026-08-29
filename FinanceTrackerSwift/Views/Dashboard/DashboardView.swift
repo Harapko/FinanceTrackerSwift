@@ -16,23 +16,19 @@ class DashboardViewModel {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
-        do {
-            async let statsTask = AnalyticsService.shared.getDashboardStats(currencyCode: currencyCode)
-            async let historyTask = AnalyticsService.shared.getBalanceHistory(currencyCode: currencyCode)
-            async let categoryTask = AnalyticsService.shared.getExpenseByCategory(
-                filters: AnalyticsFilters(currencyCode: currencyCode))
-            async let transactionsTask = TransactionService.shared.getRecentTransactions(limit: 5)
-            async let accountsTask = AccountService.shared.getAccounts()
 
-            let (s, h, c, t, a) = try await (statsTask, historyTask, categoryTask, transactionsTask, accountsTask)
-            stats = s
-            balanceHistory = h
-            expenseByCategory = c
-            recentTransactions = t
-            accounts = a
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        async let statsTask = AnalyticsService.shared.getDashboardStats(currencyCode: currencyCode)
+        async let historyTask = AnalyticsService.shared.getBalanceHistory(currencyCode: currencyCode)
+        async let categoryTask = AnalyticsService.shared.getExpenseByCategory(
+            filters: AnalyticsFilters(currencyCode: currencyCode))
+        async let transactionsTask = TransactionService.shared.getRecentTransactions(limit: 5)
+        async let accountsTask = AccountService.shared.getAccounts()
+
+        stats = try? await statsTask
+        balanceHistory = (try? await historyTask) ?? []
+        expenseByCategory = (try? await categoryTask) ?? []
+        recentTransactions = (try? await transactionsTask) ?? []
+        accounts = (try? await accountsTask) ?? []
     }
 }
 
@@ -57,7 +53,7 @@ struct DashboardView: View {
                     }
                     Spacer()
                     HStack(spacing: 12) {
-                        // Currency picker — use Menu for reliable label rendering
+                        // Currency picker
                         Menu {
                             ForEach(["USD", "EUR", "GBP", "UAH", "PLN"], id: \.self) { c in
                                 Button(c) { currencyCode = c }
@@ -81,7 +77,7 @@ struct DashboardView: View {
                         Button {
                             Task { await viewModel.load(currencyCode: currencyCode) }
                         } label: {
-                            Image(systemName: viewModel.isLoading ? "arrow.clockwise" : "arrow.clockwise")
+                            Image(systemName: "arrow.clockwise")
                                 .foregroundColor(Color(hex: "a78bfa"))
                                 .padding(8)
                                 .background(Color.white.opacity(0.08))
@@ -90,6 +86,18 @@ struct DashboardView: View {
                     }
                 }
                 .padding(.horizontal, 4)
+
+                // Error
+                if let error = viewModel.errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error).font(.caption)
+                    }
+                    .foregroundColor(Color(hex: "f87171"))
+                    .padding(12)
+                    .background(Color(hex: "f87171").opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
 
                 // Stats Overview
                 if let stats = viewModel.stats {
@@ -104,7 +112,7 @@ struct DashboardView: View {
                     BalanceHistoryChartView(entries: viewModel.balanceHistory, currencyCode: currencyCode)
                 }
 
-                // Accounts
+                // Accounts Widget
                 if !viewModel.accounts.isEmpty {
                     AccountsWidgetView(accounts: viewModel.accounts)
                 }

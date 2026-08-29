@@ -58,7 +58,19 @@ struct AccountsView: View {
                 }
                 .padding(.horizontal, 4)
 
-                if viewModel.isLoading {
+                // Error
+                if let error = viewModel.errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error).font(.caption)
+                    }
+                    .foregroundColor(Color(hex: "f87171"))
+                    .padding(12)
+                    .background(Color(hex: "f87171").opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                if viewModel.isLoading && viewModel.accounts.isEmpty {
                     ProgressView().tint(Color(hex: "a78bfa")).padding(.vertical, 40)
                 } else if viewModel.accounts.isEmpty {
                     VStack(spacing: 12) {

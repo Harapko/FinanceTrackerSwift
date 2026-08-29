@@ -61,10 +61,10 @@ struct AccountCardView: View {
             .buttonStyle(.plain)
 
             // Sub-accounts
-            if isExpanded && !account.subAccounts.isEmpty {
+            if isExpanded && !account.subAccountsList.isEmpty {
                 Divider().background(Color.white.opacity(0.08))
                 VStack(spacing: 0) {
-                    ForEach(account.subAccounts) { sub in
+                    ForEach(account.subAccountsList) { sub in
                         HStack {
                             Circle()
                                 .fill(Color.white.opacity(0.1))
@@ -89,7 +89,7 @@ struct AccountCardView: View {
                         .padding(.vertical, 10)
                         .background(Color.white.opacity(0.02))
 
-                        if sub.id != account.subAccounts.last?.id {
+                        if sub.id != account.subAccountsList.last?.id {
                             Divider().background(Color.white.opacity(0.05))
                         }
                     }

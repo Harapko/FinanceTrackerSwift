@@ -40,49 +40,38 @@ enum SubAccountType: String, Codable, CaseIterable {
     case other = "Other"
 }
 
+struct AccountResponse: Decodable, Identifiable {
+    let id: String
+    let name: String
+    let type: AccountType
+    let currencyCode: String
+    let description: String?
+    let icon: String?
+    let color: String?
+    let balance: Double?
+    let holdingsValue: Double?
+    let totalValue: Double
+    let subAccounts: [SubAccountResponse]?
+    let isArchived: Bool?
+    let sortOrder: Int?
+    let createdAtUtc: String?
+
+    var subAccountsList: [SubAccountResponse] { subAccounts ?? [] }
+}
+
 struct SubAccountResponse: Decodable, Identifiable {
     let id: String
-    let accountId: String
+    let accountId: String?
     let name: String
     let type: SubAccountType
     let currencyCode: String
     let description: String?
-    let isArchived: Bool
-    let sortOrder: Int
-    let cashBalance: Double
-    let holdingsValue: Double
-    let totalValue: Double
-    let createdAtUtc: String
-}
-
-struct AccountSummaryResponse: Decodable, Identifiable {
-    let id: String
-    let name: String
-    let color: String?
-    let description: String?
-    let type: AccountType
-    let currencyCode: String
-    let balance: Double
+    let isArchived: Bool?
+    let sortOrder: Int?
+    let cashBalance: Double?
     let holdingsValue: Double?
     let totalValue: Double
-    let subAccounts: [SubAccountResponse]?
-}
-
-struct AccountResponse: Decodable, Identifiable {
-    let id: String
-    let name: String
-    let color: String?
-    let description: String?
-    let type: AccountType
-    let currencyCode: String
-    let balance: Double
-    let holdingsValue: Double?
-    let totalValue: Double
-    let icon: String?
-    let isArchived: Bool
-    let sortOrder: Int
-    let subAccounts: [SubAccountResponse]
-    let createdAtUtc: String
+    let createdAtUtc: String?
 }
 
 struct CreateAccountPayload: Encodable {

@@ -4,15 +4,19 @@ struct TransactionService {
     static let shared = TransactionService()
     private init() {}
 
-    func getTransactions(filters: TransactionFilterParams) async throws -> PagedResult<TransactionResponse> {
-        try await APIClient.shared.get("/api/transactions", params: filters.toQueryParams())
+    func getTransactions(page: Int = 1, pageSize: Int = 20,
+                         type: String? = nil, search: String? = nil,
+                         fromDate: String? = nil, toDate: String? = nil) async throws -> PagedTransactions {
+        var params: [String: String] = ["page": "\(page)", "pageSize": "\(pageSize)"]
+        if let t = type { params["type"] = t }
+        if let s = search, !s.isEmpty { params["search"] = s }
+        if let f = fromDate { params["fromDate"] = f }
+        if let t = toDate { params["toDate"] = t }
+        return try await APIClient.shared.get("/api/transactions", params: params)
     }
 
     func getRecentTransactions(limit: Int = 5) async throws -> [TransactionResponse] {
-        let paged: PagedResult<TransactionResponse> = try await APIClient.shared.get(
-            "/api/transactions",
-            params: ["page": "1", "pageSize": "\(limit)"]
-        )
+        let paged = try await getTransactions(pageSize: limit)
         return paged.items
     }
 

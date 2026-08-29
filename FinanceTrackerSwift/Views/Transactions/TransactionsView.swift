@@ -2,21 +2,41 @@ import SwiftUI
 
 @Observable
 class TransactionsViewModel {
-    var pagedResult: PagedResult<TransactionResponse>?
+    var transactions: [TransactionResponse] = []
+    var totalCount: Int = 0
+    var currentPage: Int = 1
+    var totalPages: Int = 1
     var isLoading = false
     var errorMessage: String?
-    var filters = TransactionFilterParams()
 
-    var transactions: [TransactionResponse] { pagedResult?.items ?? [] }
-    var totalCount: Int { pagedResult?.totalCount ?? 0 }
-    var totalPages: Int { pagedResult?.totalPages ?? 1 }
+    // Filter state
+    var searchText: String = ""
+    var selectedType: String = ""
+    var fromDate: String = ""
+    var toDate: String = ""
 
-    func load() async {
+    func load(page: Int = 1) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+        currentPage = page
         do {
-            pagedResult = try await TransactionService.shared.getTransactions(filters: filters)
+            let result = try await TransactionService.shared.getTransactions(
+                page: page,
+                pageSize: 20,
+                type: selectedType.isEmpty ? nil : selectedType,
+                search: searchText.isEmpty ? nil : searchText,
+                fromDate: fromDate.isEmpty ? nil : fromDate,
+                toDate: toDate.isEmpty ? nil : toDate
+            )
+            if page == 1 {
+                transactions = result.items
+            } else {
+                transactions.append(contentsOf: result.items)
+            }
+            totalCount = result.totalCount ?? result.items.count
+            let ps = result.pageSize ?? 20
+            totalPages = ps > 0 ? ((totalCount + ps - 1) / ps) : 1
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -29,6 +49,15 @@ class TransactionsViewModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func applyFilters() async {
+        await load(page: 1)
+    }
+
+    func reset() {
+        searchText = ""; selectedType = ""; fromDate = ""; toDate = ""
+        Task { await load(page: 1) }
     }
 }
 
@@ -59,86 +88,79 @@ struct TransactionsView: View {
                         }
                         Button { showAddTransaction = true } label: {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(
-                                    LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                                   startPoint: .leading, endPoint: .trailing))
+                                .foregroundStyle(LinearGradient(
+                                    colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                    startPoint: .leading, endPoint: .trailing))
                                 .font(.title3)
                         }
                     }
                 }
                 .padding(.horizontal, 4)
 
-                // Filters
+                // Filters panel
                 if showFilters {
-                    TransactionFiltersView(filters: $viewModel.filters) {
-                        Task { await viewModel.load() }
+                    TransactionFiltersView(viewModel: viewModel) {
+                        Task { await viewModel.applyFilters() }
                     }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // Transactions list
-                if viewModel.isLoading {
-                    ProgressView().tint(Color(hex: "a78bfa"))
-                        .padding(.vertical, 40)
+                // Error
+                if let error = viewModel.errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error).font(.caption)
+                    }
+                    .foregroundColor(Color(hex: "f87171"))
+                    .padding(12).background(Color(hex: "f87171").opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                // Loading
+                if viewModel.isLoading && viewModel.transactions.isEmpty {
+                    ProgressView().tint(Color(hex: "a78bfa")).padding(.vertical, 40)
                 } else if viewModel.transactions.isEmpty {
                     VStack(spacing: 12) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 48))
-                            .foregroundColor(Color.white.opacity(0.2))
-                        Text("No transactions found")
-                            .font(.headline)
-                            .foregroundColor(Color.white.opacity(0.4))
+                        Image(systemName: "arrow.left.arrow.right.square")
+                            .font(.system(size: 48)).foregroundColor(Color.white.opacity(0.2))
+                        Text("No transactions").font(.headline).foregroundColor(Color.white.opacity(0.4))
                     }
                     .padding(.vertical, 60)
                 } else {
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0) {
                         ForEach(viewModel.transactions) { tx in
                             TransactionRowView(transaction: tx)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 6)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                .padding(.vertical, 8)
+                                .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
                                         Task { await viewModel.delete(id: tx.id) }
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
-                            Divider()
-                                .background(Color.white.opacity(0.06))
+                            if tx.id != viewModel.transactions.last?.id {
+                                Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 16)
+                            }
                         }
                     }
                     .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                    // Pagination
-                    HStack(spacing: 16) {
+                    // Load More
+                    if viewModel.currentPage < viewModel.totalPages {
                         Button {
-                            viewModel.filters.page -= 1
-                            Task { await viewModel.load() }
+                            Task { await viewModel.load(page: viewModel.currentPage + 1) }
                         } label: {
-                            Image(systemName: "chevron.left")
-                                .padding(10)
-                                .background(Color.white.opacity(0.08))
-                                .clipShape(Circle())
+                            Text("Load More")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(Color(hex: "a78bfa"))
+                                .frame(maxWidth: .infinity)
+                                .padding(14)
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
-                        .disabled(viewModel.filters.page <= 1)
-
-                        Text("Page \(viewModel.filters.page) of \(viewModel.totalPages)")
-                            .font(.caption)
-                            .foregroundColor(Color.white.opacity(0.6))
-
-                        Button {
-                            viewModel.filters.page += 1
-                            Task { await viewModel.load() }
-                        } label: {
-                            Image(systemName: "chevron.right")
-                                .padding(10)
-                                .background(Color.white.opacity(0.08))
-                                .clipShape(Circle())
-                        }
-                        .disabled(viewModel.filters.page >= viewModel.totalPages)
                     }
-                    .foregroundColor(Color(hex: "a78bfa"))
-                    .padding(.vertical, 8)
                 }
             }
             .padding(.horizontal, 16)
@@ -151,5 +173,6 @@ struct TransactionsView: View {
             AddTransactionView(onSuccess: {})
         }
         .task { await viewModel.load() }
+        .animation(.default, value: showFilters)
     }
 }

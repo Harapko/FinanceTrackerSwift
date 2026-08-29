@@ -26,18 +26,24 @@ struct TransactionRowView: View {
                 Circle()
                     .fill(amountColor.opacity(0.15))
                     .frame(width: 40, height: 40)
-                Image(systemName: transaction.type.icon)
+                Image(systemName: {
+                    switch transaction.type {
+                    case .income: return "arrow.down.circle.fill"
+                    case .expense: return "arrow.up.circle.fill"
+                    case .transfer: return "arrow.left.arrow.right.circle.fill"
+                    }
+                }())
                     .foregroundColor(amountColor)
                     .font(.system(size: 16, weight: .semibold))
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(transaction.payee.isEmpty ? transaction.categoryName : transaction.payee)
+                Text((transaction.payee?.isEmpty == false ? transaction.payee : nil) ?? transaction.categoryName ?? "Unknown")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 HStack(spacing: 6) {
-                    Text(transaction.categoryName)
+                    Text(transaction.categoryName ?? "")
                         .font(.caption)
                         .foregroundColor(Color.white.opacity(0.5))
                     Text("•")
