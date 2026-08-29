@@ -10,6 +10,13 @@ struct BalanceHistoryEntry: Decodable, Identifiable {
     let currencyCode: String
 
     var id: String { date + (accountId ?? "") }
+
+    var parsedDate: Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter.date(from: date) ?? Date()
+    }
 }
 
 // MARK: - Expense / Income by Category
