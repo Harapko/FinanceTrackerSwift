@@ -13,13 +13,12 @@ struct AddTransactionView: View {
 
     @State private var transactionType: TransactionType = .expense
     @State private var amount: String = ""
-    @State private var currencyCode: String = "UAH"
+    @State private var currencyCode: String = "USD"
     @State private var selectedAccountId: String = ""
-    @State private var selectedCategoryId: String = "health"
+    @State private var selectedCategoryId: String = "groceries"
     @State private var selectedDateOption: Int = 0 // 0: today, 1: yesterday, 2: two days ago, 3: custom
     @State private var customDate: Date = Date()
     @State private var showDatePicker = false
-    @State private var showAccountPickerSheet = false
     @State private var tags: [String] = []
     @State private var showAddTagPrompt = false
     @State private var newTagText = ""
@@ -30,18 +29,20 @@ struct AddTransactionView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    let availableCurrencies = ["UAH", "USD", "EUR", "GBP", "PLN", "CAD", "CHF"]
+    let availableCurrencies = ["USD", "EUR", "UAH", "GBP", "PLN", "CAD", "CHF", "JPY"]
 
-    // 8 Category items matching Screenshot 4
+    // Dynamic integrated categories with app palette
     let defaultCategories: [CategoryItem] = [
+        CategoryItem(id: "groceries", name: "Groceries", icon: "cart.fill", color: "#34d399"),
+        CategoryItem(id: "cafe", name: "Cafe & Dining", icon: "cup.and.saucer.fill", color: "#a855f7"),
+        CategoryItem(id: "home", name: "Housing", icon: "house.fill", color: "#f97316"),
         CategoryItem(id: "health", name: "Health", icon: "heart.fill", color: "#ef4444"),
-        CategoryItem(id: "leisure", name: "Leisure", icon: "wallet.pass.fill", color: "#06b6d4"),
-        CategoryItem(id: "home", name: "Home", icon: "house.fill", color: "#f97316"),
-        CategoryItem(id: "cafe", name: "Cafe", icon: "fork.knife", color: "#a855f7"),
+        CategoryItem(id: "leisure", name: "Leisure", icon: "gamecontroller.fill", color: "#06b6d4"),
         CategoryItem(id: "education", name: "Education", icon: "graduationcap.fill", color: "#3b82f6"),
         CategoryItem(id: "gifts", name: "Gifts", icon: "gift.fill", color: "#ec4899"),
-        CategoryItem(id: "groceries", name: "Groceries", icon: "basket.fill", color: "#22c55e"),
-        CategoryItem(id: "more", name: "More", icon: "plus", color: "#64748b")
+        CategoryItem(id: "salary", name: "Salary", icon: "briefcase.fill", color: "#10b981"),
+        CategoryItem(id: "investment", name: "Investment", icon: "chart.line.uptrend.xyaxis", color: "#818cf8"),
+        CategoryItem(id: "more", name: "Other", icon: "ellipsis.circle.fill", color: "#64748b")
     ]
 
     var selectedAccount: AccountResponse? {
@@ -64,46 +65,69 @@ struct AddTransactionView: View {
         let calendar = Calendar.current
         let target = calendar.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
         let formatter = DateFormatter()
-        formatter.dateFormat = "M/d"
+        formatter.dateFormat = "MMM d"
         let datePart = formatter.string(from: target)
-        let relPart = daysAgo == 0 ? "today" : (daysAgo == 1 ? "yesterday" : "two days ago")
+        let relPart = daysAgo == 0 ? "Today" : (daysAgo == 1 ? "Yesterday" : "2 days ago")
         return (datePart, relPart)
+    }
+
+    var themeColor: Color {
+        transactionType == .expense ? Color(hex: "f87171") : Color(hex: "34d399")
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background dark green-olive theme matching Screenshot 4
-                Color(hex: "0e1711").ignoresSafeArea()
+                Color(hex: "0d1117").ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 22) {
-                        // 1. EXPENSES vs INCOME Tabs
+                    VStack(spacing: 20) {
+                        // 1. Sleek Expense / Income Segmented Control
                         HStack(spacing: 0) {
-                            tabButton(title: "EXPENSES", isSelected: transactionType == .expense) {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                            tabPill(
+                                title: "EXPENSE",
+                                icon: "arrow.down.right.circle.fill",
+                                isSelected: transactionType == .expense,
+                                activeColor: Color(hex: "f87171")
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                     transactionType = .expense
                                 }
                             }
-                            tabButton(title: "INCOME", isSelected: transactionType == .income) {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+
+                            tabPill(
+                                title: "INCOME",
+                                icon: "arrow.up.right.circle.fill",
+                                isSelected: transactionType == .income,
+                                activeColor: Color(hex: "34d399")
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                     transactionType = .income
                                 }
                             }
                         }
-                        .padding(.top, 8)
+                        .padding(4)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 10)
 
-                        // 2. Big Amount Input with Currency & Calculator
-                        VStack(spacing: 4) {
-                            HStack(alignment: .bottom, spacing: 12) {
-                                Spacer()
+                        // 2. Hero Amount Input Card
+                        VStack(spacing: 8) {
+                            Text(transactionType == .expense ? "Amount to Spend" : "Amount to Receive")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.5))
 
-                                TextField("0", text: $amount)
+                            HStack(alignment: .center, spacing: 8) {
+                                Text(transactionType == .expense ? "-" : "+")
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundColor(themeColor)
+
+                                TextField("0.00", text: $amount)
                                     .keyboardType(.decimalPad)
-                                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                                    .font(.system(size: 40, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(minWidth: 80, maxWidth: 200)
+                                    .frame(minWidth: 80, maxWidth: 180)
 
                                 Menu {
                                     ForEach(availableCurrencies, id: \.self) { c in
@@ -112,12 +136,16 @@ struct AddTransactionView: View {
                                 } label: {
                                     HStack(spacing: 4) {
                                         Text(currencyCode)
-                                            .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(Color(hex: "34d399"))
+                                            .font(.headline.bold())
+                                            .foregroundColor(themeColor)
                                         Image(systemName: "chevron.up.chevron.down")
-                                            .font(.system(size: 11, weight: .bold))
-                                            .foregroundColor(Color(hex: "34d399").opacity(0.7))
+                                            .font(.caption2.bold())
+                                            .foregroundColor(themeColor.opacity(0.7))
                                     }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(themeColor.opacity(0.12))
+                                    .clipShape(Capsule())
                                 }
 
                                 Button {
@@ -126,25 +154,27 @@ struct AddTransactionView: View {
                                     }
                                 } label: {
                                     Image(systemName: "plus.forwardslash.minus")
-                                        .font(.system(size: 22))
+                                        .font(.system(size: 18, weight: .medium))
                                         .foregroundColor(Color.white.opacity(0.6))
-                                        .padding(.leading, 6)
+                                        .padding(8)
+                                        .background(Color.white.opacity(0.06))
+                                        .clipShape(Circle())
                                 }
-
-                                Spacer()
                             }
-                            .padding(.bottom, 6)
-
-                            Rectangle()
-                                .fill(Color.white.opacity(0.18))
-                                .frame(width: 240, height: 1.5)
                         }
+                        .padding(18)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(themeColor.opacity(0.25), lineWidth: 1))
+                        .padding(.horizontal, 20)
 
                         // 3. Account Selector
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Account")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Target Account", systemImage: "building.columns.fill")
                                 .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.5))
+                                .foregroundColor(Color.white.opacity(0.6))
+                                .padding(.horizontal, 20)
 
                             Menu {
                                 ForEach(accounts) { acc in
@@ -161,91 +191,136 @@ struct AddTransactionView: View {
                                     }
                                 }
                             } label: {
-                                HStack {
-                                    Text(selectedAccount?.name ?? (accounts.first?.name ?? "Select Account"))
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundColor(Color(hex: "34d399"))
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color(hex: selectedAccount?.color ?? "818cf8").opacity(0.2))
+                                            .frame(width: 38, height: 38)
+                                        Image(systemName: selectedAccount?.type.icon ?? "building.columns")
+                                            .font(.caption.bold())
+                                            .foregroundColor(Color(hex: selectedAccount?.color ?? "818cf8"))
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(selectedAccount?.name ?? (accounts.first?.name ?? "Select Account"))
+                                            .font(.subheadline.bold())
+                                            .foregroundColor(.white)
+                                        Text("Balance: \(selectedAccount?.totalValue.formatted(currencyCode: selectedAccount?.currencyCode ?? currencyCode) ?? "0.00")")
+                                            .font(.caption2)
+                                            .foregroundColor(Color.white.opacity(0.5))
+                                    }
+
                                     Spacer()
+
                                     Image(systemName: "chevron.up.chevron.down")
-                                        .font(.caption2)
-                                        .foregroundColor(Color.white.opacity(0.4))
+                                        .font(.caption.bold())
+                                        .foregroundColor(Color(hex: "a78bfa"))
                                 }
-                                .padding(.vertical, 4)
+                                .padding(14)
+                                .background(Color.white.opacity(0.04))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                                .padding(.horizontal, 20)
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 20)
 
-                        // 4. Categories Grid (2 Rows of 4 Circles matching Screenshot 4)
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Categories")
+                        // 4. Categories Grid (Integrated with Brand Aesthetics)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Label("Category", systemImage: "square.grid.2x2.fill")
                                 .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.5))
+                                .foregroundColor(Color.white.opacity(0.6))
                                 .padding(.horizontal, 20)
 
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), spacing: 18) {
-                                ForEach(defaultCategories) { cat in
-                                    Button {
-                                        selectedCategoryId = cat.id
-                                    } label: {
-                                        VStack(spacing: 8) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(Color(hex: cat.color))
-                                                    .frame(width: 56, height: 56)
-                                                    .overlay(
-                                                        Circle()
-                                                            .stroke(Color.white, lineWidth: selectedCategoryId == cat.id ? 3 : 0)
-                                                    )
-                                                    .shadow(color: selectedCategoryId == cat.id ? Color(hex: cat.color).opacity(0.6) : Color.clear, radius: 8)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(defaultCategories) { cat in
+                                        let isSelected = selectedCategoryId == cat.id
+                                        Button {
+                                            selectedCategoryId = cat.id
+                                        } label: {
+                                            VStack(spacing: 8) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color(hex: cat.color).opacity(isSelected ? 0.9 : 0.15))
+                                                        .frame(width: 52, height: 52)
+                                                        .overlay(
+                                                            Circle()
+                                                                .stroke(Color.white, lineWidth: isSelected ? 2.5 : 0)
+                                                        )
+                                                        .shadow(color: isSelected ? Color(hex: cat.color).opacity(0.6) : Color.clear, radius: 8)
 
-                                                Image(systemName: cat.icon)
-                                                    .font(.system(size: 22, weight: .bold))
-                                                    .foregroundColor(.white)
+                                                    Image(systemName: cat.icon)
+                                                        .font(.system(size: 20, weight: .bold))
+                                                        .foregroundColor(isSelected ? .white : Color(hex: cat.color))
+                                                }
+
+                                                Text(cat.name)
+                                                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                                                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
+                                                    .lineLimit(1)
                                             }
-
-                                            Text(cat.name)
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(selectedCategoryId == cat.id ? .white : Color.white.opacity(0.7))
-                                                .lineLimit(1)
+                                            .frame(width: 68)
                                         }
                                     }
                                 }
-                            }
-                            .padding(.horizontal, 16)
-                        }
-
-                        // 5. Date Quick Pills
-                        HStack(spacing: 8) {
-                            datePill(index: 0, daysAgo: 0)
-                            datePill(index: 1, daysAgo: 1)
-                            datePill(index: 2, daysAgo: 2)
-
-                            // Calendar custom date button
-                            Button {
-                                showDatePicker = true
-                            } label: {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(selectedDateOption == 3 ? Color(hex: "10b981") : Color.white.opacity(0.6))
-                                    .frame(width: 44, height: 44)
-                                    .background(selectedDateOption == 3 ? Color(hex: "10b981").opacity(0.2) : Color.white.opacity(0.05))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 4)
                             }
                         }
-                        .padding(.horizontal, 20)
 
-                        // 6. Tags Section
+                        // 5. Date Quick Selector
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Date", systemImage: "calendar")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+                                .padding(.horizontal, 20)
+
+                            HStack(spacing: 8) {
+                                datePill(index: 0, daysAgo: 0)
+                                datePill(index: 1, daysAgo: 1)
+                                datePill(index: 2, daysAgo: 2)
+
+                                Button {
+                                    showDatePicker = true
+                                } label: {
+                                    Image(systemName: "calendar.badge.clock")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(selectedDateOption == 3 ? Color(hex: "a78bfa") : Color.white.opacity(0.6))
+                                        .frame(width: 44, height: 44)
+                                        .background(selectedDateOption == 3 ? Color(hex: "a78bfa").opacity(0.2) : Color.white.opacity(0.05))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(selectedDateOption == 3 ? Color(hex: "a78bfa") : Color.clear, lineWidth: 1))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+
+                        // 6. Note / Comment
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Note / Description (optional)", systemImage: "text.alignleft")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+                                .padding(.horizontal, 20)
+
+                            TextField("e.g. Weekly grocery haul, Dinner with friends...", text: $comment)
+                                .textFieldStyle(.plain)
+                                .foregroundColor(.white)
+                                .padding(14)
+                                .background(Color.white.opacity(0.04))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.06), lineWidth: 1))
+                                .padding(.horizontal, 20)
+                        }
+
+                        // 7. Tags
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text("Tags")
+                                Label("Tags (optional)", systemImage: "tag.fill")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color.white.opacity(0.5))
+                                    .foregroundColor(Color.white.opacity(0.6))
                                 Spacer()
-                                Image(systemName: "magnifyingglass")
-                                    .font(.caption)
-                                    .foregroundColor(Color(hex: "34d399"))
                             }
+                            .padding(.horizontal, 20)
 
                             HStack(spacing: 8) {
                                 Button {
@@ -256,67 +331,28 @@ struct AddTransactionView: View {
                                         Text("Add tag")
                                     }
                                     .font(.caption.weight(.semibold))
-                                    .foregroundColor(Color(hex: "34d399"))
-                                    .padding(.horizontal, 10)
+                                    .foregroundColor(Color(hex: "a78bfa"))
+                                    .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(Color(hex: "34d399").opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(hex: "34d399").opacity(0.3), lineWidth: 1))
+                                    .background(Color(hex: "a78bfa").opacity(0.12))
+                                    .clipShape(Capsule())
+                                    .overlay(Capsule().stroke(Color(hex: "a78bfa").opacity(0.3), lineWidth: 1))
                                 }
 
                                 ForEach(tags, id: \.self) { t in
                                     Text("#\(t)")
                                         .font(.caption2.bold())
                                         .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
                                         .background(Color.white.opacity(0.08))
                                         .clipShape(Capsule())
                                 }
                             }
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
 
-                        // 7. Comment Field (Underline style)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Comment")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.5))
-
-                            TextField("Comment", text: $comment)
-                                .textFieldStyle(.plain)
-                                .foregroundColor(.white)
-                                .padding(.vertical, 6)
-
-                            Rectangle()
-                                .fill(Color.white.opacity(0.15))
-                                .frame(height: 1)
-                        }
-                        .padding(.horizontal, 20)
-
-                        // 8. Photo Section (Placeholder Attachment Slots)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Photo")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(Color.white.opacity(0.5))
-
-                            HStack(spacing: 12) {
-                                ForEach(0..<3) { _ in
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.06))
-                                            .frame(height: 70)
-                                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
-                                        Image(systemName: "plus")
-                                            .font(.title2)
-                                            .foregroundColor(Color.white.opacity(0.4))
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-
-                        // Error message banner
+                        // Error Banner
                         if let error = errorMessage {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -329,13 +365,12 @@ struct AddTransactionView: View {
                             .padding(.horizontal, 20)
                         }
 
-                        // Bottom breathing room for safe area
                         Spacer().frame(height: 80)
                     }
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                // Floating Bottom Add Button (Always Clean & Visible)
+                // Floating Action Bar with App's Gradient Styling
                 VStack(spacing: 0) {
                     Divider().background(Color.white.opacity(0.06))
                     Button {
@@ -343,41 +378,44 @@ struct AddTransactionView: View {
                     } label: {
                         Group {
                             if isLoading {
-                                ProgressView().tint(.black)
+                                ProgressView().tint(.white)
                             } else {
-                                Text("Add")
-                                    .font(.headline.bold())
-                                    .foregroundColor(Color(hex: "0e1711"))
+                                HStack(spacing: 8) {
+                                    Image(systemName: transactionType == .expense ? "arrow.down.right.circle.fill" : "arrow.up.right.circle.fill")
+                                    Text(transactionType == .expense ? "Add Expense" : "Add Income")
+                                        .font(.headline.bold())
+                                }
+                                .foregroundColor(.white)
                             }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(16)
                         .background(
                             LinearGradient(
-                                colors: [Color(hex: "fbbf24"), Color(hex: "f59e0b")],
+                                colors: transactionType == .expense ?
+                                    [Color(hex: "f43f5e"), Color(hex: "e11d48")] :
+                                    [Color(hex: "10b981"), Color(hex: "059669")],
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color(hex: "f59e0b").opacity(0.35), radius: 10, x: 0, y: 5)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(
+                            color: (transactionType == .expense ? Color(hex: "f43f5e") : Color(hex: "10b981")).opacity(0.35),
+                            radius: 10, x: 0, y: 5
+                        )
                     }
                     .disabled(isLoading)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                 }
-                .background(Color(hex: "0e1711").opacity(0.95))
+                .background(Color(hex: "0d1117").opacity(0.95))
             }
-            .navigationTitle("Add Transactions")
+            .navigationTitle(transactionType == .expense ? "New Expense" : "New Income")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                    }
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
             .sheet(isPresented: $showDatePicker) {
@@ -393,6 +431,7 @@ struct AddTransactionView: View {
                                     selectedDateOption = 3
                                     showDatePicker = false
                                 }
+                                .foregroundColor(Color(hex: "a78bfa"))
                             }
                         }
                 }
@@ -424,20 +463,24 @@ struct AddTransactionView: View {
 
     // MARK: - Subviews
     @ViewBuilder
-    private func tabButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func tabPill(title: String, icon: String, isSelected: Bool, activeColor: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.caption.bold())
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.5))
-                    .padding(.horizontal, 20)
-
-                Rectangle()
-                    .fill(isSelected ? Color.white : Color.clear)
-                    .frame(height: 3)
+                    .font(.subheadline.bold())
             }
+            .foregroundColor(isSelected ? .white : Color.white.opacity(0.5))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ?
+                LinearGradient(colors: [activeColor.opacity(0.8), activeColor], startPoint: .leading, endPoint: .trailing) :
+                LinearGradient(colors: [Color.clear, Color.clear], startPoint: .leading, endPoint: .trailing)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -449,30 +492,29 @@ struct AddTransactionView: View {
             selectedDateOption = index
         } label: {
             VStack(spacing: 2) {
-                Text(dPart)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(isSelected ? Color(hex: "0e1711") : .white)
                 Text(rPart)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(isSelected ? Color(hex: "0e1711").opacity(0.8) : Color.white.opacity(0.5))
+                    .font(.caption.bold())
+                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.8))
+                Text(dPart)
+                    .font(.system(size: 10))
+                    .foregroundColor(isSelected ? Color.white.opacity(0.9) : Color.white.opacity(0.4))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background(isSelected ? Color(hex: "34d399") : Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .background(isSelected ? Color(hex: "818cf8") : Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isSelected ? Color(hex: "a78bfa") : Color.white.opacity(0.05), lineWidth: 1))
         }
     }
 
     // MARK: - Save
     private func save() async {
-        // Auto-select account if empty
         var targetAccountId = selectedAccountId
         if targetAccountId.isEmpty {
             if let first = accounts.first {
                 targetAccountId = first.id
                 selectedAccountId = first.id
             } else {
-                // Fetch accounts
                 if let accs = try? await AccountService.shared.getAccounts(), let first = accs.first {
                     accounts = accs
                     targetAccountId = first.id
@@ -482,7 +524,7 @@ struct AddTransactionView: View {
         }
 
         guard !targetAccountId.isEmpty else {
-            errorMessage = "Please create or select an Account first."
+            errorMessage = "Please select or create an account first."
             return
         }
 
@@ -495,7 +537,6 @@ struct AddTransactionView: View {
         errorMessage = nil
         defer { isLoading = false }
 
-        // Find or map category
         let mappedCat = categories.first { $0.name.lowercased() == selectedCategoryId.lowercased() } ?? categories.first
 
         let payload = CreateTransactionPayload(

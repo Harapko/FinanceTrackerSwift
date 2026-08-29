@@ -215,19 +215,22 @@ struct DashboardHeaderCard: View {
     var onLogout: () -> Void = {}
 
     var body: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(greeting)
                     .font(.headline.weight(.bold))
                     .foregroundColor(.white)
-                Text("Overview of your financial performance")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Text("Financial Performance")
                     .font(.caption)
                     .foregroundColor(Color.white.opacity(0.5))
+                    .lineLimit(1)
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 // Currency Selector Menu
                 Menu {
                     ForEach(availableCurrencies, id: \.self) { c in
@@ -243,60 +246,70 @@ struct DashboardHeaderCard: View {
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         Text(currencyCode)
                             .font(.caption.weight(.bold))
                             .foregroundColor(.white)
                             .fixedSize()
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundColor(Color(hex: "a78bfa"))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 7)
                     .background(Color.white.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
+                .fixedSize(horizontal: true, vertical: false)
 
                 // Refresh button
                 Button {
                     onRefresh()
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .font(.caption.weight(.bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Color(hex: "a78bfa"))
                         .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                         .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshing)
-                        .padding(8)
+                        .padding(7)
                         .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
                 }
                 .disabled(isRefreshing)
+                .fixedSize(horizontal: true, vertical: false)
 
-                // Add Transaction button
+                // Add Transaction button (+ Add - Guaranteed single line)
                 Button {
                     onAddTransaction()
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
-                            .font(.caption.weight(.bold))
+                            .font(.system(size: 11, weight: .bold))
                         Text("Add")
-                            .font(.caption.weight(.semibold))
+                            .font(.system(size: 13, weight: .bold))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                               startPoint: .leading, endPoint: .trailing))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 7)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 9))
                 }
+                .fixedSize(horizontal: true, vertical: false)
             }
+            .fixedSize(horizontal: true, vertical: false)
         }
-        .padding(18)
+        .padding(16)
         .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 18)
                 .stroke(Color.white.opacity(0.08), lineWidth: 1)
         )
     }
