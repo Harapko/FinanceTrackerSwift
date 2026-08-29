@@ -6,7 +6,8 @@ enum ContributionItemType: String, CaseIterable {
     case crypto = "Crypto"
 }
 
-struct ContributionFormItem: Identifiable {
+@Observable
+class ContributionFormItem: Identifiable {
     let id = UUID()
     var type: ContributionItemType = .cash
     var symbol: String = "VOO"
@@ -21,6 +22,13 @@ struct ContributionFormItem: Identifiable {
     var isFetchingQuote: Bool = false
     var instrumentId: String? = nil
 
+    init(type: ContributionItemType = .cash, symbol: String = "VOO", quantity: String = "1", cashAmount: String = "") {
+        self.type = type
+        self.symbol = symbol
+        self.quantity = quantity
+        self.cashAmount = cashAmount
+    }
+
     var calculatedAmount: Double {
         switch type {
         case .cash:
@@ -31,6 +39,20 @@ struct ContributionFormItem: Identifiable {
             let f = Double(fee) ?? 0
             return (q * p) + f
         }
+    }
+
+    func fetchQuote() async {
+        let sym = symbol.trimmingCharacters(in: .whitespaces).uppercased()
+        guard !sym.isEmpty else { return }
+        isFetchingQuote = true
+        defer { isFetchingQuote = false }
+        do {
+            let quote = try await HoldingService.shared.getLiveQuote(symbol: sym, type: type.rawValue)
+            liveQuote = quote
+            if unitPrice.isEmpty || unitPrice == "0.00" {
+                unitPrice = String(format: "%.4f", quote.resolvedPrice)
+            }
+        } catch {}
     }
 }
 
@@ -45,9 +67,6 @@ struct ContributeToGoalView: View {
     @State private var generalNote: String = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-
-    let stockSuggestions = ["VOO", "SPY", "AAPL", "NVDA", "TSLA", "MSFT", "GOOGL"]
-    let cryptoSuggestions = ["BTC", "ETH", "SOL", "BNB", "XRP"]
 
     var totalContribution: Double {
         items.reduce(0) { $0 + $1.calculatedAmount }
@@ -132,14 +151,16 @@ struct ContributeToGoalView: View {
 
                         // Contribution Items List
                         VStack(spacing: 14) {
-                            ForEach($items) { $item in
+                            ForEach(items) { item in
                                 ContributionItemCard(
-                                    item: $item,
+                                    item: item,
                                     goalCurrency: goal.currencyCode,
                                     canRemove: items.count > 1,
                                     onRemove: {
-                                        if let idx = items.firstIndex(where: { $0.id == item.id }) {
-                                            items.remove(at: idx)
+                                        withAnimation(.spring(response: 0.3)) {
+                                            if let idx = items.firstIndex(where: { $0.id == item.id }) {
+                                                items.remove(at: idx)
+                                            }
                                         }
                                     }
                                 )
@@ -149,7 +170,9 @@ struct ContributeToGoalView: View {
                         // Add More Items Buttons
                         HStack(spacing: 10) {
                             Button {
-                                items.append(ContributionFormItem(type: .stock, symbol: "VOO", quantity: "1"))
+                                withAnimation(.spring(response: 0.3)) {
+                                    items.append(ContributionFormItem(type: .stock, symbol: "VOO", quantity: "1"))
+                                }
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "chart.line.uptrend.xyaxis")
@@ -165,7 +188,9 @@ struct ContributeToGoalView: View {
                             }
 
                             Button {
-                                items.append(ContributionFormItem(type: .crypto, symbol: "BTC", quantity: "0.01"))
+                                withAnimation(.spring(response: 0.3)) {
+                                    items.append(ContributionFormItem(type: .crypto, symbol: "BTC", quantity: "0.01"))
+                                }
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "bitcoinsign.circle")
@@ -181,7 +206,9 @@ struct ContributeToGoalView: View {
                             }
 
                             Button {
-                                items.append(ContributionFormItem(type: .cash, cashAmount: "50"))
+                                withAnimation(.spring(response: 0.3)) {
+                                    items.append(ContributionFormItem(type: .cash, cashAmount: "50"))
+                                }
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "banknote")
@@ -361,7 +388,7 @@ struct ContributeToGoalView: View {
 
 // MARK: - Contribution Item Card
 struct ContributionItemCard: View {
-    @Binding var item: ContributionFormItem
+    @Bindable var item: ContributionFormItem
     let goalCurrency: String
     let canRemove: Bool
     let onRemove: () -> Void
@@ -428,7 +455,7 @@ struct ContributionItemCard: View {
                                 ProgressView().tint(Color(hex: "a78bfa"))
                             } else {
                                 Button {
-                                    Task { await fetchQuote() }
+                                    Task { await item.fetchQuote() }
                                 } label: {
                                     Text("Quote")
                                         .font(.caption.bold())
@@ -450,7 +477,7 @@ struct ContributionItemCard: View {
                                 ForEach(item.type == .crypto ? cryptoSuggestions : stockSuggestions, id: \.self) { s in
                                     Button {
                                         item.symbol = s
-                                        Task { await fetchQuote() }
+                                        Task { await item.fetchQuote() }
                                     } label: {
                                         Text(s)
                                             .font(.caption2.bold())
@@ -546,22 +573,8 @@ struct ContributionItemCard: View {
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.06), lineWidth: 1))
         .task {
             if (item.type == .stock || item.type == .crypto) && !item.symbol.isEmpty {
-                await fetchQuote()
+                await item.fetchQuote()
             }
         }
-    }
-
-    private func fetchQuote() async {
-        let sym = item.symbol.trimmingCharacters(in: .whitespaces).uppercased()
-        guard !sym.isEmpty else { return }
-        item.isFetchingQuote = true
-        defer { item.isFetchingQuote = false }
-        do {
-            let quote = try await HoldingService.shared.getLiveQuote(symbol: sym, type: item.type.rawValue)
-            item.liveQuote = quote
-            if item.unitPrice.isEmpty || item.unitPrice == "0.00" {
-                item.unitPrice = String(format: "%.4f", quote.resolvedPrice)
-            }
-        } catch {}
     }
 }
