@@ -129,7 +129,7 @@ struct AddSavingsGoalView: View {
             if let g = editingGoal {
                 let payload = UpdateSavingsGoalPayload(name: name, targetAmount: amount, currencyCode: currencyCode,
                     deadline: deadline.isEmpty ? nil : deadline, description: description.isEmpty ? nil : description,
-                    icon: icon, color: color, accountId: nil, subAccountId: nil, instrumentId: nil)
+                    icon: icon, color: color, accountId: nil, subAccountId: nil)
                 let _: SavingsGoalResponse = try await SavingsGoalService.shared.updateGoal(id: g.id, payload: payload)
             } else {
                 let payload = CreateSavingsGoalPayload(name: name, targetAmount: amount, currencyCode: currencyCode,
