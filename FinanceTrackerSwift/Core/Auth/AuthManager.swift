@@ -11,14 +11,19 @@ final class AuthManager {
     var errorMessage: String?
 
     private init() {
-        // Restore session from keychain on startup
-        if let token = KeychainHelper.shared.read(key: "finance_tracker_token"),
-           let userData = KeychainHelper.shared.read(key: "finance_tracker_user"),
+        // Restore session ONLY if a non-empty token and valid user exist
+        let token = KeychainHelper.shared.read(key: "finance_tracker_token")
+        let userData = KeychainHelper.shared.read(key: "finance_tracker_user")
+
+        if let token = token, !token.isEmpty,
+           let userData = userData,
            let data = userData.data(using: .utf8),
-           let user = try? JSONDecoder().decode(UserResponse.self, from: data),
-           !token.isEmpty {
+           let user = try? JSONDecoder().decode(UserResponse.self, from: data) {
             currentUser = user
             isAuthenticated = true
+        } else {
+            currentUser = nil
+            isAuthenticated = false
         }
     }
 

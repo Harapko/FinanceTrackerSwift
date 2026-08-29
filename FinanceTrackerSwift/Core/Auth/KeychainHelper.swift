@@ -6,9 +6,11 @@ final class KeychainHelper {
     private init() {}
 
     func save(key: String, value: String) {
-        // Mirror to UserDefaults as rock-solid fallback on physical iOS devices without Keychain entitlement
+        // 1. Direct UserDefaults persistence (rock-solid on iOS device sandboxes)
         UserDefaults.standard.set(value, forKey: key)
+        UserDefaults.standard.synchronize()
 
+        // 2. Best-effort Keychain storage
         let data = Data(value.utf8)
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
@@ -21,6 +23,12 @@ final class KeychainHelper {
     }
 
     func read(key: String) -> String? {
+        // 1. Check UserDefaults first
+        if let val = UserDefaults.standard.string(forKey: key), !val.trimmingCharacters(in: .whitespaces).isEmpty {
+            return val.trimmingCharacters(in: .whitespaces)
+        }
+
+        // 2. Fallback to Keychain
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrAccount: key,
@@ -30,15 +38,19 @@ final class KeychainHelper {
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        if status == errSecSuccess, let data = result as? Data, let str = String(data: data, encoding: .utf8), !str.isEmpty {
-            return str
+        if status == errSecSuccess, let data = result as? Data, let str = String(data: data, encoding: .utf8), !str.trimmingCharacters(in: .whitespaces).isEmpty {
+            let cleanStr = str.trimmingCharacters(in: .whitespaces)
+            UserDefaults.standard.set(cleanStr, forKey: key)
+            UserDefaults.standard.synchronize()
+            return cleanStr
         }
-        // Resilient fallback to UserDefaults
-        return UserDefaults.standard.string(forKey: key)
+        return nil
     }
 
     func delete(key: String) {
         UserDefaults.standard.removeObject(forKey: key)
+        UserDefaults.standard.synchronize()
+
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrAccount: key,
