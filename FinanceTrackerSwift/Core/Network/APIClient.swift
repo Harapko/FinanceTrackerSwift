@@ -22,7 +22,10 @@ enum APIError: LocalizedError {
 // MARK: - App Config
 enum AppConfig {
     static var baseURL: String {
-        ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "http://localhost:5237"
+        if let custom = UserDefaults.standard.string(forKey: "custom_api_url"), !custom.trimmingCharacters(in: .whitespaces).isEmpty {
+            return custom.trimmingCharacters(in: .whitespaces)
+        }
+        return ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "https://financetrackerapi-8g0s.onrender.com"
     }
 }
 

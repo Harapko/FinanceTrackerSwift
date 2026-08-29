@@ -43,11 +43,13 @@ struct UserProfileSheet: View {
                     }
                     .padding(.top, 20)
 
-                    // Account Details Card
+                    // Account & Server Details Card
                     VStack(spacing: 12) {
                         profileRow(title: "Default Currency", value: auth.currentUser?.defaultCurrencyCode ?? "USD", icon: "dollarsign.circle")
                         Divider().background(Color.white.opacity(0.06))
-                        profileRow(title: "Status", value: "Active", icon: "checkmark.seal.fill", valueColor: Color(hex: "34d399"))
+                        profileRow(title: "Server API", value: "Render Cloud", icon: "cloud.fill", valueColor: Color(hex: "818cf8"))
+                        Divider().background(Color.white.opacity(0.06))
+                        profileRow(title: "Status", value: "Connected", icon: "checkmark.seal.fill", valueColor: Color(hex: "34d399"))
                         Divider().background(Color.white.opacity(0.06))
                         profileRow(title: "Platform", value: "Finance Tracker iOS", icon: "iphone")
                     }
