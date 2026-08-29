@@ -89,8 +89,10 @@ struct AccountsView: View {
             .padding(.vertical, 12)
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
-        .sheet(isPresented: $showAddAccount) {
-            AddAccountView { Task { await viewModel.load() } }
+        .sheet(isPresented: $showAddAccount, onDismiss: {
+            Task { await viewModel.load() }
+        }) {
+            AddAccountView(onSuccess: {})
         }
         .task { await viewModel.load() }
     }

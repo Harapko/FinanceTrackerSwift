@@ -94,14 +94,20 @@ struct SavingsView: View {
             .padding(.vertical, 12)
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
-        .sheet(isPresented: $showAddGoal) {
-            AddSavingsGoalView(editingGoal: nil) { Task { await viewModel.load() } }
+        .sheet(isPresented: $showAddGoal, onDismiss: {
+            Task { await viewModel.load() }
+        }) {
+            AddSavingsGoalView(editingGoal: nil, onSuccess: {})
         }
-        .sheet(item: $editingGoal) { goal in
-            AddSavingsGoalView(editingGoal: goal) { Task { await viewModel.load() } }
+        .sheet(item: $editingGoal, onDismiss: {
+            Task { await viewModel.load() }
+        }) { goal in
+            AddSavingsGoalView(editingGoal: goal, onSuccess: {})
         }
-        .sheet(item: $contributeGoal) { goal in
-            ContributeToGoalView(goal: goal) { Task { await viewModel.load() } }
+        .sheet(item: $contributeGoal, onDismiss: {
+            Task { await viewModel.load() }
+        }) { goal in
+            ContributeToGoalView(goal: goal, onSuccess: {})
         }
         .task { await viewModel.load() }
     }

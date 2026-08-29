@@ -145,10 +145,10 @@ struct TransactionsView: View {
             .padding(.vertical, 12)
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
-        .sheet(isPresented: $showAddTransaction) {
-            AddTransactionView {
-                Task { await viewModel.load() }
-            }
+        .sheet(isPresented: $showAddTransaction, onDismiss: {
+            Task { await viewModel.load() }
+        }) {
+            AddTransactionView(onSuccess: {})
         }
         .task { await viewModel.load() }
     }

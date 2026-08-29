@@ -57,18 +57,26 @@ struct DashboardView: View {
                     }
                     Spacer()
                     HStack(spacing: 12) {
-                        // Currency picker
-                        Picker("Currency", selection: $currencyCode) {
+                        // Currency picker — use Menu for reliable label rendering
+                        Menu {
                             ForEach(["USD", "EUR", "GBP", "UAH", "PLN"], id: \.self) { c in
-                                Text(c).tag(c)
+                                Button(c) { currencyCode = c }
                             }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(currencyCode)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(.white)
+                                    .fixedSize()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.caption2)
+                                    .foregroundColor(Color(hex: "a78bfa"))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
-                        .pickerStyle(.menu)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .foregroundColor(.white)
 
                         Button {
                             Task { await viewModel.load(currencyCode: currencyCode) }
@@ -128,10 +136,10 @@ struct DashboardView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddTransaction) {
-            AddTransactionView {
-                Task { await viewModel.load(currencyCode: currencyCode) }
-            }
+        .sheet(isPresented: $showAddTransaction, onDismiss: {
+            Task { await viewModel.load(currencyCode: currencyCode) }
+        }) {
+            AddTransactionView(onSuccess: {})
         }
         .task {
             let code = auth.currentUser?.defaultCurrencyCode ?? "USD"
