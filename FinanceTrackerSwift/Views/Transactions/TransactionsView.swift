@@ -137,32 +137,133 @@ struct TransactionPeriodHelper {
 
 // MARK: - Category Icon Mapper for SF Symbols
 struct CategoryIconHelper {
-    static func sfSymbol(forIcon icon: String?, categoryName: String) -> String {
+    static func sfSymbol(forIcon icon: String?, categoryName: String = "") -> String {
         if let icon = icon, !icon.isEmpty {
             switch icon {
-            case "bag.fill", "ShoppingBag": return "bag.fill"
-            case "cart.fill", "ShoppingCart": return "cart.fill"
-            case "fork.knife", "Utensils": return "fork.knife"
-            case "cup.and.saucer.fill", "Coffee": return "cup.and.saucer.fill"
-            case "house.fill", "Home": return "house.fill"
-            case "car.fill", "Car": return "car.fill"
-            case "heart.fill", "Heart": return "heart.fill"
-            case "briefcase.fill", "Briefcase": return "briefcase.fill"
-            case "graduationcap.fill", "GraduationCap": return "graduationcap.fill"
-            case "gift.fill", "Gift": return "gift.fill"
-            case "airplane", "Plane": return "airplane"
-            case "film.fill", "Film": return "film.fill"
-            case "music.note", "Music": return "music.note"
-            case "dumbbell.fill", "Dumbbell": return "dumbbell.fill"
-            case "cross.case.fill", "Shield": return "shield.fill"
-            case "creditcard.fill", "Wallet": return "creditcard.fill"
-            case "banknote.fill", "DollarSign": return "dollarsign.circle.fill"
-            case "chart.line.uptrend.xyaxis", "TrendingUp": return "chart.line.uptrend.xyaxis"
-            case "wrench.and.screwdriver.fill", "Wrench": return "wrench.fill"
-            case "sparkles", "Sparkles": return "sparkles"
-            case "iphone", "Smartphone": return "iphone"
-            case "building.columns.fill", "Landmark": return "building.columns.fill"
-            case "gamecontroller.fill", "Gamepad2": return "gamecontroller.fill"
+            // Food & Dining
+            case "Utensils", "fork.knife": return "fork.knife"
+            case "UtensilsCrossed", "fork.knife.circle.fill": return "fork.knife.circle.fill"
+            case "Coffee", "cup.and.saucer.fill": return "cup.and.saucer.fill"
+            case "Pizza", "takeoutbag.and.cup.and.straw.fill": return "takeoutbag.and.cup.and.straw.fill"
+            case "Beer", "mug.fill": return "mug.fill"
+            case "Wine", "wineglass.fill": return "wineglass.fill"
+            case "Apple", "apple.logo": return "apple.logo"
+            case "Cake", "birthday.cake.fill": return "birthday.cake.fill"
+            case "Cookie", "circle.hexagongrid.fill": return "circle.hexagongrid.fill"
+            case "Fish", "fish.fill": return "fish.fill"
+            case "Soup": return "cup.and.saucer.fill"
+
+            // Shopping & Retail
+            case "ShoppingBag", "bag.fill": return "bag.fill"
+            case "ShoppingCart", "cart.fill": return "cart.fill"
+            case "Store", "storefront.fill": return "storefront.fill"
+            case "Tag", "tag.fill": return "tag.fill"
+            case "Gift", "gift.fill": return "gift.fill"
+            case "Package", "shippingbox.fill": return "shippingbox.fill"
+            case "Shirt", "tshirt.fill": return "tshirt.fill"
+            case "Watch", "applewatch": return "applewatch"
+            case "Glasses", "eyeglasses": return "eyeglasses"
+            case "Footprints", "shoeprints.fill": return "shoeprints.fill"
+            case "CreditCard", "creditcard.fill": return "creditcard.fill"
+
+            // Transport & Travel
+            case "Car", "car.fill": return "car.fill"
+            case "Fuel", "fuelpump.fill": return "fuelpump.fill"
+            case "Bus", "bus.fill": return "bus.fill"
+            case "Plane", "airplane": return "airplane"
+            case "Train", "tram.fill": return "tram.fill"
+            case "Bike", "bicycle": return "bicycle"
+            case "Ship", "ferry.fill": return "ferry.fill"
+            case "MapPin", "mappin.and.ellipse": return "mappin.and.ellipse"
+            case "Navigation", "location.fill": return "location.fill"
+            case "Luggage", "suitcase.fill": return "suitcase.fill"
+            case "Ticket", "ticket.fill": return "ticket.fill"
+            case "Compass", "safari.fill": return "safari.fill"
+
+            // Housing & Utilities
+            case "Home", "house.fill": return "house.fill"
+            case "Building", "building.fill": return "building.fill"
+            case "Building2", "building.2.fill": return "building.2.fill"
+            case "Zap", "bolt.fill": return "bolt.fill"
+            case "Droplets", "drop.fill": return "drop.fill"
+            case "Flame", "flame.fill": return "flame.fill"
+            case "Wifi", "wifi": return "wifi"
+            case "Tv", "tv.fill": return "tv.fill"
+            case "Trash2", "trash.fill": return "trash.fill"
+            case "Key", "key.fill": return "key.fill"
+            case "Lightbulb", "lightbulb.fill": return "lightbulb.fill"
+            case "Bed", "bed.double.fill": return "bed.double.fill"
+            case "Bath", "shower.fill": return "shower.fill"
+
+            // Health & Fitness
+            case "Heart", "heart.fill": return "heart.fill"
+            case "HeartPulse", "heart.text.square.fill": return "heart.text.square.fill"
+            case "Activity", "waveform.path.ecg": return "waveform.path.ecg"
+            case "Dumbbell", "dumbbell.fill": return "dumbbell.fill"
+            case "Pill", "pills.fill": return "pills.fill"
+            case "Stethoscope", "stethoscope": return "stethoscope"
+            case "Crosshair", "target": return "target"
+            case "Shield", "shield.fill": return "shield.fill"
+            case "Smile", "face.smiling.inverse": return "face.smiling.inverse"
+            case "Hospital", "cross.case.fill": return "cross.case.fill"
+
+            // Entertainment & Fun
+            case "Film", "film.fill": return "film.fill"
+            case "Music", "music.note": return "music.note"
+            case "Gamepad2", "gamecontroller.fill": return "gamecontroller.fill"
+            case "Tv2", "play.tv.fill": return "play.tv.fill"
+            case "BookOpen", "book.closed.fill": return "book.closed.fill"
+            case "Camera", "camera.fill": return "camera.fill"
+            case "Headphones", "headphones": return "headphones"
+            case "Palette", "paintpalette.fill": return "paintpalette.fill"
+            case "PartyPopper", "party.popper.fill": return "party.popper.fill"
+            case "Radio", "radio.fill": return "radio.fill"
+            case "Mic", "mic.fill": return "mic.fill"
+
+            // Work, Tech & Education
+            case "Briefcase", "briefcase.fill": return "briefcase.fill"
+            case "GraduationCap", "graduationcap.fill": return "graduationcap.fill"
+            case "Laptop", "laptopcomputer": return "laptopcomputer"
+            case "Smartphone", "iphone": return "iphone"
+            case "Monitor", "display": return "display"
+            case "Tablet", "ipad": return "ipad"
+            case "Book", "book.fill": return "book.fill"
+            case "Award", "rosette": return "rosette"
+            case "Scale", "scalemass.fill": return "scalemass.fill"
+            case "FileText", "doc.text.fill": return "doc.text.fill"
+            case "Printer", "printer.fill": return "printer.fill"
+            case "Calculator": return "number"
+
+            // Finance & Wealth
+            case "DollarSign", "banknote.fill", "dollarsign.circle.fill": return "dollarsign.circle.fill"
+            case "Wallet": return "creditcard.fill"
+            case "Coins", "centsign.circle.fill": return "centsign.circle.fill"
+            case "TrendingUp", "chart.line.uptrend.xyaxis": return "chart.line.uptrend.xyaxis"
+            case "PiggyBank": return "banknote.fill"
+            case "Percent", "percent": return "percent"
+            case "Receipt", "doc.plaintext.fill": return "doc.plaintext.fill"
+            case "Vault", "lock.shield.fill": return "lock.shield.fill"
+            case "Landmark", "building.columns.fill": return "building.columns.fill"
+            case "BadgePercent": return "percent"
+            case "ArrowUpRight", "arrow.up.right": return "arrow.up.right"
+            case "BarChart3", "chart.bar.fill": return "chart.bar.fill"
+
+            // Family, Pets & Life
+            case "Baby", "stroller.fill": return "stroller.fill"
+            case "Dog", "Cat", "pawprint.fill": return "pawprint.fill"
+            case "Users", "person.2.fill": return "person.2.fill"
+            case "User", "person.fill": return "person.fill"
+            case "Sparkles", "sparkles": return "sparkles"
+            case "SmilePlus", "face.smiling.fill": return "face.smiling.fill"
+
+            // Services & Tools
+            case "Wrench", "wrench.fill": return "wrench.fill"
+            case "Hammer", "hammer.fill": return "hammer.fill"
+            case "Scissors", "scissors": return "scissors"
+            case "ShieldCheck", "checkmark.shield.fill": return "checkmark.shield.fill"
+            case "Lock", "lock.fill": return "lock.fill"
+            case "Settings", "gearshape.fill": return "gearshape.fill"
+
             default:
                 if UIImage(systemName: icon) != nil {
                     return icon
@@ -177,25 +278,25 @@ struct CategoryIconHelper {
         if cat.contains("home") || cat.contains("house") || cat.contains("rent") || cat.contains("mortgage") {
             return "house.fill"
         }
-        if cat.contains("grocer") || cat.contains("food") || cat.contains("market") {
+        if cat.contains("grocer") || cat.contains("food") || cat.contains("market") || cat.contains("їжа") || cat.contains("продукт") {
             return "cart.fill"
         }
-        if cat.contains("tech") || cat.contains("computer") || cat.contains("gadget") || cat.contains("laptop") {
+        if cat.contains("tech") || cat.contains("computer") || cat.contains("gadget") || cat.contains("laptop") || cat.contains("технік") {
             return "laptopcomputer"
         }
-        if cat.contains("lesson") || cat.contains("school") || cat.contains("english") || cat.contains("study") || cat.contains("education") {
+        if cat.contains("lesson") || cat.contains("school") || cat.contains("english") || cat.contains("study") || cat.contains("education") || cat.contains("навчан") {
             return "graduationcap.fill"
         }
-        if cat.contains("family") || cat.contains("kids") || cat.contains("child") {
+        if cat.contains("family") || cat.contains("kids") || cat.contains("child") || cat.contains("сім") {
             return "person.2.fill"
         }
-        if cat.contains("health") || cat.contains("doctor") || cat.contains("med") {
-            return "cross.case.fill"
+        if cat.contains("health") || cat.contains("doctor") || cat.contains("med") || cat.contains("здоров") || cat.contains("аптек") {
+            return "heart.text.square.fill"
         }
-        if cat.contains("car") || cat.contains("transport") || cat.contains("gas") || cat.contains("fuel") {
+        if cat.contains("car") || cat.contains("transport") || cat.contains("gas") || cat.contains("fuel") || cat.contains("авто") || cat.contains("бензин") {
             return "car.fill"
         }
-        if cat.contains("salary") || cat.contains("income") || cat.contains("bonus") || cat.contains("wage") {
+        if cat.contains("salary") || cat.contains("income") || cat.contains("bonus") || cat.contains("wage") || cat.contains("дохід") || cat.contains("зарплат") {
             return "dollarsign.circle.fill"
         }
 

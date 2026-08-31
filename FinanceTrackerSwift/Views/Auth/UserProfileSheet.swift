@@ -4,9 +4,20 @@ struct UserProfileSheet: View {
     @Environment(AuthManager.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var showLogoutConfirmation = false
+    @State private var serverURL: String = AppConfig.baseURL
+    @State private var isCustomServer = false
 
     var userInitial: String {
         auth.currentUser?.firstName.prefix(1).uppercased() ?? "U"
+    }
+
+    var serverDisplayValue: String {
+        if AppConfig.baseURL.contains("localhost") || AppConfig.baseURL.contains("127.0.0.1") {
+            return "Localhost (.NET :5237)"
+        } else if AppConfig.baseURL.contains("onrender.com") {
+            return "Render Cloud"
+        }
+        return AppConfig.baseURL
     }
 
     var body: some View {
@@ -47,9 +58,9 @@ struct UserProfileSheet: View {
                     VStack(spacing: 12) {
                         profileRow(title: "Default Currency", value: auth.currentUser?.defaultCurrencyCode ?? "USD", icon: "dollarsign.circle")
                         Divider().background(Color.white.opacity(0.06))
-                        profileRow(title: "Server API", value: "Render Cloud", icon: "cloud.fill", valueColor: Color(hex: "818cf8"))
+                        profileRow(title: "API Endpoint", value: serverDisplayValue, icon: "network", valueColor: Color(hex: "818cf8"))
                         Divider().background(Color.white.opacity(0.06))
-                        profileRow(title: "Status", value: "Connected", icon: "checkmark.seal.fill", valueColor: Color(hex: "34d399"))
+                        profileRow(title: "Status", value: "Active", icon: "checkmark.seal.fill", valueColor: Color(hex: "34d399"))
                         Divider().background(Color.white.opacity(0.06))
                         profileRow(title: "Platform", value: "Finance Tracker iOS", icon: "iphone")
                     }
@@ -57,6 +68,56 @@ struct UserProfileSheet: View {
                     .background(Color.white.opacity(0.04))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.06), lineWidth: 1))
+
+                    // Quick Server Selector
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("API SERVER TARGET")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color.white.opacity(0.6))
+
+                        HStack(spacing: 8) {
+                            Button {
+                                AppConfig.setBaseURL(AppConfig.localBaseURL)
+                                serverURL = AppConfig.localBaseURL
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "laptopcomputer")
+                                    Text("Localhost (.NET)")
+                                }
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(AppConfig.baseURL == AppConfig.localBaseURL ? .white : Color.white.opacity(0.6))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    AppConfig.baseURL == AppConfig.localBaseURL ?
+                                    Color(hex: "818cf8") : Color.white.opacity(0.05)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+
+                            Button {
+                                AppConfig.setBaseURL(AppConfig.remoteBaseURL)
+                                serverURL = AppConfig.remoteBaseURL
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "cloud.fill")
+                                    Text("Cloud API")
+                                }
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(AppConfig.baseURL == AppConfig.remoteBaseURL ? .white : Color.white.opacity(0.6))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    AppConfig.baseURL == AppConfig.remoteBaseURL ?
+                                    Color(hex: "818cf8") : Color.white.opacity(0.05)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
 
                     Spacer()
 

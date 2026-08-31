@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 extension Color {
     init(hex: String) {
@@ -19,6 +22,28 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+
+    func toHex() -> String {
+        #if canImport(UIKit)
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            return "818cf8"
+        }
+
+        let r = max(0, min(255, Int(round(red * 255))))
+        let g = max(0, min(255, Int(round(green * 255))))
+        let b = max(0, min(255, Int(round(blue * 255))))
+
+        return String(format: "%02x%02x%02x", r, g, b)
+        #else
+        return "818cf8"
+        #endif
     }
 }
 

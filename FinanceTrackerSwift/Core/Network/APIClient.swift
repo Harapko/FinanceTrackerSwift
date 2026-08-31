@@ -21,11 +21,22 @@ enum APIError: LocalizedError {
 
 // MARK: - App Config
 enum AppConfig {
+    static let localBaseURL = "http://localhost:5237"
+    static let remoteBaseURL = "https://financetrackerapi-8g0s.onrender.com"
+
     static var baseURL: String {
         if let custom = UserDefaults.standard.string(forKey: "custom_api_url"), !custom.trimmingCharacters(in: .whitespaces).isEmpty {
             return custom.trimmingCharacters(in: .whitespaces)
         }
-        return ProcessInfo.processInfo.environment["API_BASE_URL"] ?? "https://financetrackerapi-8g0s.onrender.com"
+        return ProcessInfo.processInfo.environment["API_BASE_URL"] ?? localBaseURL
+    }
+
+    static func setBaseURL(_ url: String) {
+        UserDefaults.standard.set(url.trimmingCharacters(in: .whitespaces), forKey: "custom_api_url")
+    }
+
+    static func resetToDefault() {
+        UserDefaults.standard.removeObject(forKey: "custom_api_url")
     }
 }
 
