@@ -15,6 +15,7 @@ struct AnalyticsService {
         var params: [String: String] = ["currencyCode": filters.currencyCode]
         if let from = filters.fromDate { params["fromDate"] = from }
         if let to = filters.toDate { params["toDate"] = to }
+        if let acc = filters.accountId, !acc.isEmpty { params["accountId"] = acc }
         let response: CategoryBreakdownResponse = try await APIClient.shared.get(
             "/api/analytics/expense-by-category", params: params)
         return response.items
@@ -25,6 +26,7 @@ struct AnalyticsService {
         var params: [String: String] = ["currencyCode": filters.currencyCode]
         if let from = filters.fromDate { params["fromDate"] = from }
         if let to = filters.toDate { params["toDate"] = to }
+        if let acc = filters.accountId, !acc.isEmpty { params["accountId"] = acc }
         let response: CategoryBreakdownResponse = try await APIClient.shared.get(
             "/api/analytics/income-by-category", params: params)
         return response.items
@@ -35,6 +37,7 @@ struct AnalyticsService {
         var params: [String: String] = ["currencyCode": filters.currencyCode]
         if let from = filters.fromDate { params["fromDate"] = from }
         if let to = filters.toDate { params["toDate"] = to }
+        if let acc = filters.accountId, !acc.isEmpty { params["accountId"] = acc }
         return try await APIClient.shared.get("/api/analytics/income-vs-expense", params: params)
     }
 
@@ -49,6 +52,7 @@ struct AnalyticsService {
         var params: [String: String] = ["currencyCode": filters.currencyCode]
         if let from = filters.fromDate { params["fromDate"] = from }
         if let to = filters.toDate { params["toDate"] = to }
+        if let acc = filters.accountId, !acc.isEmpty { params["accountId"] = acc }
         let response: TopSpendingResponse = try await APIClient.shared.get(
             "/api/analytics/top-spending", params: params)
         return response.transactions

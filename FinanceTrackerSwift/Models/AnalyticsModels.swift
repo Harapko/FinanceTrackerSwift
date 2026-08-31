@@ -34,6 +34,7 @@ struct CategoryBreakdownEntry: Decodable, Identifiable {
     let amount: Double
     let percentage: Double
     let color: String?
+    let icon: String?
 
     var id: String { categoryId }
     var total: Double { amount }
@@ -171,5 +172,6 @@ struct CashFlowOverviewResponse {
 struct AnalyticsFilters {
     var fromDate: String?
     var toDate: String?
+    var accountId: String?
     var currencyCode: String = "USD"
 }

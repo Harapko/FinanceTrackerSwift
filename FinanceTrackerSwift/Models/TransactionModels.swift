@@ -249,3 +249,23 @@ struct CreateTransferPayload: Encodable {
         self.payee = payee
     }
 }
+
+// MARK: - Transaction Period & Date Grouping
+enum TransactionPeriodMode: String, CaseIterable, Identifiable {
+    case day = "Day"
+    case week = "Week"
+    case month = "Month"
+    case year = "Year"
+    case period = "Period"
+
+    var id: String { rawValue }
+}
+
+struct TransactionDateGroup: Identifiable {
+    var id: String { dateString }
+    let dateString: String
+    let formattedDate: String
+    let transactions: [TransactionResponse]
+    let totalExpense: Double
+    let totalIncome: Double
+}
