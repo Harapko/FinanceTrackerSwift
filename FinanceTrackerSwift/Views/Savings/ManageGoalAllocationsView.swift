@@ -37,7 +37,7 @@ struct ManageGoalAllocationsView: View {
                                         Text(currentGoal.name)
                                             .font(.headline.bold())
                                             .foregroundColor(.white)
-                                        Text("Current Value: \(currentGoal.currentAmount.formatted(currencyCode: currentGoal.currencyCode))")
+                                        Text("\(L10n.Dashboard.totalBalance): \(currentGoal.currentAmount.formatted(currencyCode: currentGoal.currencyCode))")
                                             .font(.caption)
                                             .foregroundColor(Color.white.opacity(0.6))
                                     }
@@ -55,9 +55,9 @@ struct ManageGoalAllocationsView: View {
 
                             // Segmented Tabs
                             Picker("Section", selection: $selectedTab) {
-                                Text("Holdings").tag(0)
-                                Text("History (\(currentGoal.contributionsList.count))").tag(1)
-                                Text("Withdraw").tag(2)
+                                Text(L10n.Savings.tabAllocations).tag(0)
+                                Text("\(L10n.Savings.tabHistory) (\(currentGoal.contributionsList.count))").tag(1)
+                                Text(L10n.Savings.tabWithdraw).tag(2)
                             }
                             .pickerStyle(.segmented)
 
@@ -91,11 +91,11 @@ struct ManageGoalAllocationsView: View {
                     ProgressView().tint(Color(hex: "a78bfa"))
                 }
             }
-            .navigationTitle("Goal Allocations")
+            .navigationTitle(L10n.Savings.manageAllocations)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button(L10n.Common.close) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
@@ -111,7 +111,7 @@ struct ManageGoalAllocationsView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Saved Instruments List
             if !g.savedInstrumentsList.isEmpty {
-                Text("ALLOCATED ASSETS (\(g.savedInstrumentsList.count))")
+                Text("\(L10n.Savings.allocatedAssets.uppercased()) (\(g.savedInstrumentsList.count))")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color.white.opacity(0.5))
 
@@ -186,7 +186,7 @@ struct ManageGoalAllocationsView: View {
                     Image(systemName: "chart.pie")
                         .font(.system(size: 32))
                         .foregroundColor(Color.white.opacity(0.2))
-                    Text("No stock or crypto allocations in this goal")
+                    Text(L10n.Savings.noAllocationsInGoal)
                         .font(.caption)
                         .foregroundColor(Color.white.opacity(0.5))
                 }
@@ -205,7 +205,7 @@ struct ManageGoalAllocationsView: View {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 32))
                         .foregroundColor(Color.white.opacity(0.2))
-                    Text("No contributions recorded yet")
+                    Text(L10n.Savings.noContributionsYet)
                         .font(.caption)
                         .foregroundColor(Color.white.opacity(0.5))
                 }
@@ -226,7 +226,7 @@ struct ManageGoalAllocationsView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
-                                Text(isCash ? "Cash Deposit" : (c.instrumentSymbol ?? "Asset"))
+                                Text(isCash ? L10n.Savings.cashDeposit : (c.instrumentSymbol ?? L10n.Accounts.addAsset))
                                     .font(.subheadline.bold())
                                     .foregroundColor(.white)
                                 if let q = c.quantity {
@@ -273,7 +273,7 @@ struct ManageGoalAllocationsView: View {
     private func withdrawTab(_ g: SavingsGoalResponse) -> some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Withdraw Amount (\(g.currencyCode))", systemImage: "arrow.down.circle")
+                Label("\(L10n.Savings.withdrawAmount) (\(g.currencyCode))", systemImage: "arrow.down.circle")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(Color.white.opacity(0.6))
                 TextField("0.00", text: $withdrawAmount)
@@ -287,10 +287,10 @@ struct ManageGoalAllocationsView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Label("Reason / Note (optional)", systemImage: "text.alignleft")
+                Label(L10n.Assets.notesOptional, systemImage: "text.alignleft")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(Color.white.opacity(0.6))
-                TextField("e.g. Vacation expenses...", text: $withdrawNote)
+                TextField(L10n.Savings.withdrawReasonPlaceholder, text: $withdrawNote)
                     .textFieldStyle(.plain)
                     .padding(14)
                     .background(Color.white.opacity(0.07))
@@ -305,7 +305,7 @@ struct ManageGoalAllocationsView: View {
                     if isActionLoading {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Withdraw from Goal")
+                        Text(L10n.Savings.withdrawFromGoal)
                             .font(.headline.bold())
                             .foregroundColor(.white)
                     }

@@ -4,6 +4,13 @@ import Charts
 enum AnalyticsTab: String, CaseIterable {
     case cashflow = "Cash Flow"
     case networth = "Net Worth"
+
+    var displayName: String {
+        switch self {
+        case .cashflow: return L10n.Analytics.tabCashFlow
+        case .networth: return L10n.Analytics.tabNetWorth
+        }
+    }
 }
 
 @Observable
@@ -69,6 +76,7 @@ struct AnalyticsView: View {
 
     private var displayFormatter: DateFormatter {
         let formatter = DateFormatter()
+        formatter.locale = LocalizationManager.shared.currentLocale
         formatter.dateStyle = .medium
         return formatter
     }
@@ -79,7 +87,7 @@ struct AnalyticsView: View {
 
     var dateRangeDisplayText: String {
         if fromDate.isEmpty && toDate.isEmpty {
-            return "All Time"
+            return L10n.Analytics.allTime
         }
         if !fromDate.isEmpty && !toDate.isEmpty {
             if fromDate == toDate {
@@ -94,13 +102,13 @@ struct AnalyticsView: View {
         }
         if !fromDate.isEmpty {
             let fromStr = isoFormatter.date(from: fromDate).map { displayFormatter.string(from: $0) } ?? fromDate
-            return "From \(fromStr)"
+            return L10n.Analytics.fromFormatted(fromStr)
         }
         if !toDate.isEmpty {
             let toStr = isoFormatter.date(from: toDate).map { displayFormatter.string(from: $0) } ?? toDate
-            return "Until \(toStr)"
+            return L10n.Analytics.untilFormatted(toStr)
         }
-        return "Select Date Range"
+        return L10n.Analytics.selectDateRange
     }
 
     var filters: AnalyticsFilters {
@@ -112,112 +120,8 @@ struct AnalyticsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Header
-                VStack(spacing: 12) {
-                    HStack {
-                        Text("Analytics")
-                            .font(.largeTitle.bold())
-                            .foregroundColor(.white)
-                        Spacer()
-                        Menu {
-                            ForEach(["USD", "EUR", "GBP", "UAH", "PLN"], id: \.self) { c in
-                                Button(c) { currencyCode = c }
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(currencyCode)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundColor(.white)
-                                    .fixedSize()
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .font(.caption2)
-                                    .foregroundColor(Color(hex: "a78bfa"))
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-
-                    // Interactive Date Range Selector Pill
-                    Button {
-                        if let d1 = isoFormatter.date(from: fromDate) {
-                            tempStartDate = d1
-                        } else {
-                            tempStartDate = Date()
-                        }
-                        if let d2 = isoFormatter.date(from: toDate) {
-                            tempEndDate = d2
-                        } else {
-                            tempEndDate = Date()
-                        }
-                        showDateRangeSheet = true
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "calendar")
-                                .font(.subheadline)
-                                .foregroundColor(hasActiveDateFilter ? Color(hex: "818cf8") : Color.white.opacity(0.6))
-
-                            Text(dateRangeDisplayText)
-                                .font(.subheadline.weight(hasActiveDateFilter ? .semibold : .regular))
-                                .foregroundColor(hasActiveDateFilter ? .white : Color.white.opacity(0.8))
-                                .lineLimit(1)
-
-                            Spacer()
-
-                            if hasActiveDateFilter {
-                                Button {
-                                    fromDate = ""
-                                    toDate = ""
-                                    reload()
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.caption)
-                                        .foregroundColor(Color.white.opacity(0.5))
-                                }
-                                .buttonStyle(.plain)
-                            }
-
-                            Image(systemName: "chevron.down")
-                                .font(.caption2)
-                                .foregroundColor(Color.white.opacity(0.4))
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(hasActiveDateFilter ? Color(hex: "818cf8").opacity(0.15) : Color.white.opacity(0.06))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(hasActiveDateFilter ? Color(hex: "818cf8").opacity(0.4) : Color.white.opacity(0.1), lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-                .padding(.horizontal, 4)
-
-                // Tab selector
-                HStack(spacing: 0) {
-                    ForEach(AnalyticsTab.allCases, id: \.self) { tab in
-                        Button {
-                            activeTab = tab
-                            reload()
-                        } label: {
-                            Text(tab.rawValue)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundColor(activeTab == tab ? .white : Color.white.opacity(0.4))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    activeTab == tab ?
-                                        LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                                       startPoint: .leading, endPoint: .trailing) :
-                                        LinearGradient(colors: [Color.clear], startPoint: .leading, endPoint: .trailing)
-                                )
-                        }
-                    }
-                }
-                .background(Color.white.opacity(0.07))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                headerSection
+                tabSelectorSection
 
                 if viewModel.isLoading {
                     ProgressView().tint(Color(hex: "a78bfa")).padding(.vertical, 40)
@@ -239,6 +143,121 @@ struct AnalyticsView: View {
             reload()
         }
         .onChange(of: currencyCode) { _, _ in reload() }
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text(L10n.Analytics.title)
+                    .font(.largeTitle.bold())
+                    .foregroundColor(.white)
+                Spacer()
+                Menu {
+                    ForEach(["USD", "EUR", "GBP", "UAH", "PLN"], id: \.self) { c in
+                        Button(c) { currencyCode = c }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(currencyCode)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .fixedSize()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2)
+                            .foregroundColor(Color(hex: "a78bfa"))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+
+            // Interactive Date Range Selector Pill
+            Button {
+                if let d1 = isoFormatter.date(from: fromDate) {
+                    tempStartDate = d1
+                } else {
+                    tempStartDate = Date()
+                }
+                if let d2 = isoFormatter.date(from: toDate) {
+                    tempEndDate = d2
+                } else {
+                    tempEndDate = Date()
+                }
+                showDateRangeSheet = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.subheadline)
+                        .foregroundColor(hasActiveDateFilter ? Color(hex: "818cf8") : Color.white.opacity(0.6))
+
+                    Text(dateRangeDisplayText)
+                        .font(.subheadline.weight(hasActiveDateFilter ? .semibold : .regular))
+                        .foregroundColor(hasActiveDateFilter ? .white : Color.white.opacity(0.8))
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    if hasActiveDateFilter {
+                        Button {
+                            fromDate = ""
+                            toDate = ""
+                            reload()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(Color.white.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                        .foregroundColor(Color.white.opacity(0.4))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(hasActiveDateFilter ? Color(hex: "818cf8").opacity(0.15) : Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(hasActiveDateFilter ? Color(hex: "818cf8").opacity(0.4) : Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var tabSelectorSection: some View {
+        HStack(spacing: 0) {
+            ForEach(AnalyticsTab.allCases, id: \.self) { tab in
+                tabButton(for: tab)
+            }
+        }
+        .background(Color.white.opacity(0.07))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    @ViewBuilder
+    private func tabButton(for tab: AnalyticsTab) -> some View {
+        let isSelected = activeTab == tab
+        Button {
+            activeTab = tab
+            reload()
+        } label: {
+            Text(tab.displayName)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(isSelected ? .white : Color.white.opacity(0.4))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    isSelected ?
+                        LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                       startPoint: .leading, endPoint: .trailing) :
+                        LinearGradient(colors: [Color.clear], startPoint: .leading, endPoint: .trailing)
+                )
+        }
     }
 
     private func applyPreset(_ preset: String) {
@@ -316,7 +335,7 @@ struct AnalyticsView: View {
                 VStack(spacing: 20) {
                     // Quick Presets
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("QUICK PRESETS")
+                        Text(LocalizationManager.shared.isUkrainian ? "ШВИДКІ ПРЕСЕТИ" : "QUICK PRESETS")
                             .font(.caption.bold())
                             .foregroundColor(Color.white.opacity(0.5))
 
@@ -344,10 +363,10 @@ struct AnalyticsView: View {
                     // Date Pickers
                     VStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Start Date")
+                            Text(L10n.Transactions.fromDate)
                                 .font(.caption.bold())
                                 .foregroundColor(Color.white.opacity(0.6))
-                            DatePicker("Start Date", selection: $tempStartDate, displayedComponents: .date)
+                            DatePicker(L10n.Transactions.fromDate, selection: $tempStartDate, displayedComponents: .date)
                                 .datePickerStyle(.compact)
                                 .labelsHidden()
                                 .padding(10)
@@ -357,10 +376,10 @@ struct AnalyticsView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("End Date")
+                            Text(L10n.Transactions.toDate)
                                 .font(.caption.bold())
                                 .foregroundColor(Color.white.opacity(0.6))
-                            DatePicker("End Date", selection: $tempEndDate, displayedComponents: .date)
+                            DatePicker(L10n.Transactions.toDate, selection: $tempEndDate, displayedComponents: .date)
                                 .datePickerStyle(.compact)
                                 .labelsHidden()
                                 .padding(10)
@@ -379,7 +398,7 @@ struct AnalyticsView: View {
                             showDateRangeSheet = false
                             reload()
                         } label: {
-                            Text("Reset (All Time)")
+                            Text("\(L10n.Transactions.resetAll) (\(L10n.Analytics.allTime))")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.8))
                                 .frame(maxWidth: .infinity)
@@ -394,7 +413,7 @@ struct AnalyticsView: View {
                             showDateRangeSheet = false
                             reload()
                         } label: {
-                            Text("Apply Filter")
+                            Text(L10n.Transactions.applyFilters)
                                 .font(.subheadline.weight(.bold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -408,11 +427,11 @@ struct AnalyticsView: View {
                 }
             }
             .background(Color(hex: "0d1117").ignoresSafeArea())
-            .navigationTitle("Select Date Range")
+            .navigationTitle(L10n.Analytics.selectDateRange)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
+                    Button(L10n.Common.close) {
                         showDateRangeSheet = false
                     }
                     .foregroundColor(Color(hex: "a78bfa"))
@@ -444,13 +463,13 @@ struct CashFlowTabView: View {
             // Overview cards
             if let overview = viewModel.cashFlowOverview {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    StatCard(title: "Net Savings", value: overview.netSavings, currency: currencyCode,
+                    StatCard(title: L10n.Dashboard.netSavings, value: overview.netSavings, currency: currencyCode,
                              icon: "arrow.up.right.circle.fill", color: Color(hex: "818cf8"))
-                    StatCard(title: "Income", value: overview.totalIncome, currency: currencyCode,
+                    StatCard(title: L10n.Dashboard.income, value: overview.totalIncome, currency: currencyCode,
                              icon: "arrow.down.circle.fill", color: Color(hex: "34d399"))
-                    StatCard(title: "Expenses", value: overview.totalExpenses, currency: currencyCode,
+                    StatCard(title: L10n.Dashboard.expense, value: overview.totalExpenses, currency: currencyCode,
                              icon: "arrow.up.circle.fill", color: Color(hex: "f87171"))
-                    StatCard(title: "Expense Ratio", value: overview.expenseRatio, currency: nil,
+                    StatCard(title: L10n.Analytics.expenseRatio, value: overview.expenseRatio, currency: nil,
                              icon: "percent", color: Color(hex: "fbbf24"), isPercent: true)
                 }
             }
@@ -463,10 +482,10 @@ struct CashFlowTabView: View {
             // Category breakdowns side by side
             HStack(alignment: .top, spacing: 12) {
                 if !viewModel.expenseByCategory.isEmpty {
-                    MiniCategoryPie(title: "Expenses", entries: viewModel.expenseByCategory, currencyCode: currencyCode)
+                    MiniCategoryPie(title: L10n.Dashboard.expense, entries: viewModel.expenseByCategory, currencyCode: currencyCode)
                 }
                 if !viewModel.incomeByCategory.isEmpty {
-                    MiniCategoryPie(title: "Income", entries: viewModel.incomeByCategory, currencyCode: currencyCode)
+                    MiniCategoryPie(title: L10n.Dashboard.income, entries: viewModel.incomeByCategory, currencyCode: currencyCode)
                 }
             }
 
@@ -487,11 +506,11 @@ struct NetWorthTabView: View {
         VStack(spacing: 16) {
             if let nw = viewModel.netWorthOverview {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    StatCard(title: "Net Worth", value: nw.netWorth, currency: currencyCode,
+                    StatCard(title: L10n.Analytics.netWorth, value: nw.netWorth, currency: currencyCode,
                              icon: "chart.bar.fill", color: Color(hex: "818cf8"))
-                    StatCard(title: "Total Assets", value: nw.totalAssets, currency: currencyCode,
+                    StatCard(title: L10n.Analytics.totalAssets, value: nw.totalAssets, currency: currencyCode,
                              icon: "arrow.up.circle.fill", color: Color(hex: "34d399"))
-                    StatCard(title: "Liabilities", value: nw.totalLiabilities, currency: currencyCode,
+                    StatCard(title: L10n.Analytics.liabilities, value: nw.totalLiabilities, currency: currencyCode,
                              icon: "arrow.down.circle.fill", color: Color(hex: "f87171"))
                 }
             }
@@ -517,7 +536,7 @@ struct CashFlowTimelineView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Cash Flow Timeline")
+            Text(L10n.Analytics.monthlyCashFlow)
                 .font(.headline.bold())
                 .foregroundColor(.white)
 
@@ -599,7 +618,7 @@ struct TopSpendingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Top Spending").font(.headline.bold()).foregroundColor(.white)
+            Text(L10n.Analytics.topSpending).font(.headline.bold()).foregroundColor(.white)
             ForEach(entries.prefix(5)) { entry in
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -630,7 +649,7 @@ struct AssetAllocationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Asset Allocation").font(.headline.bold()).foregroundColor(.white)
+            Text(L10n.Analytics.assetAllocation).font(.headline.bold()).foregroundColor(.white)
             HStack(alignment: .center, spacing: 20) {
                 Chart {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
@@ -667,7 +686,7 @@ struct InvestmentHoldingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Investment Holdings").font(.headline.bold()).foregroundColor(.white)
+            Text(L10n.Analytics.investmentHoldings).font(.headline.bold()).foregroundColor(.white)
             ForEach(entries) { entry in
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -711,7 +730,7 @@ struct NetWorthBreakdownView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Account Breakdown").font(.headline.bold()).foregroundColor(.white)
+            Text(L10n.Analytics.accountBreakdown).font(.headline.bold()).foregroundColor(.white)
             ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
                 HStack {
                     Circle().fill(categoryColors[idx % categoryColors.count]).frame(width: 10, height: 10)

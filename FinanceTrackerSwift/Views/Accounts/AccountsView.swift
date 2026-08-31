@@ -85,10 +85,10 @@ struct AccountsView: View {
                 // Header
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Accounts")
+                        Text(L10n.Accounts.pageTitle)
                             .font(.largeTitle.bold())
                             .foregroundColor(.white)
-                        Text("\(viewModel.accounts.count) accounts • Net Worth: \(viewModel.totalNetWorth.formatted(currencyCode: "USD"))")
+                        Text(L10n.Accounts.accountsSummary(count: viewModel.accounts.count, netWorth: viewModel.totalNetWorth.formatted(currencyCode: "USD")))
                             .font(.caption)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
@@ -103,7 +103,7 @@ struct AccountsView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "chart.line.uptrend.xyaxis")
                                     .font(.system(size: 11, weight: .bold))
-                                Text("Asset")
+                                Text(L10n.Accounts.addAsset)
                                     .font(.caption.weight(.bold))
                             }
                             .foregroundColor(Color(hex: "34d399"))
@@ -120,7 +120,7 @@ struct AccountsView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
                                     .font(.caption.weight(.bold))
-                                Text("Account")
+                                Text(L10n.Accounts.addAccount)
                                     .font(.caption.weight(.semibold))
                             }
                             .foregroundColor(.white)
@@ -158,10 +158,10 @@ struct AccountsView: View {
                         Image(systemName: "building.columns")
                             .font(.system(size: 48))
                             .foregroundColor(Color.white.opacity(0.2))
-                        Text("No accounts yet")
+                        Text(L10n.Accounts.emptyTitle)
                             .font(.headline)
                             .foregroundColor(Color.white.opacity(0.4))
-                        Button("Add Your First Account") {
+                        Button(L10n.Accounts.createFirstAccount) {
                             activeSheet = .addAccount
                         }
                         .foregroundColor(Color(hex: "a78bfa"))
@@ -233,35 +233,35 @@ struct AccountsView: View {
             }
         }
         .confirmationDialog(
-            "Delete Account",
+            L10n.Accounts.deleteConfirmTitle,
             isPresented: $showDeleteAccountConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete Account", role: .destructive) {
+            Button(L10n.Accounts.deleteAccount, role: .destructive) {
                 if let acc = accountToDelete {
                     Task { await viewModel.deleteAccount(id: acc.id) }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
             if let acc = accountToDelete {
-                Text("Are you sure you want to delete '\(acc.name)'? This will also remove all its sub-accounts and transactions.")
+                Text(L10n.Accounts.deleteConfirmMsg(name: acc.name))
             }
         }
         .confirmationDialog(
-            "Delete Sub-Account",
+            L10n.Accounts.deleteSubConfirmTitle,
             isPresented: $showDeleteSubAccountConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete Sub-Account", role: .destructive) {
+            Button(L10n.Accounts.deleteSubAccount, role: .destructive) {
                 if let item = subAccountToDelete {
                     Task { await viewModel.deleteSubAccount(accountId: item.accountId, subAccountId: item.sub.id) }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
             if let item = subAccountToDelete {
-                Text("Are you sure you want to delete '\(item.sub.name)'?")
+                Text(L10n.Accounts.deleteSubConfirmMsg(name: item.sub.name))
             }
         }
         .task {

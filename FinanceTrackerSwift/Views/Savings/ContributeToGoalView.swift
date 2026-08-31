@@ -105,7 +105,7 @@ struct ContributeToGoalView: View {
                                     Text(goal.name)
                                         .font(.headline.bold())
                                         .foregroundColor(.white)
-                                    Text("Saved: \(goal.currentAmount.formatted(currencyCode: goal.currencyCode)) of \(goal.targetAmount.formatted(currencyCode: goal.currencyCode))")
+                                    Text(L10n.Savings.savedOf(current: goal.currentAmount.formatted(currencyCode: goal.currencyCode), target: goal.targetAmount.formatted(currencyCode: goal.currencyCode)))
                                         .font(.caption)
                                         .foregroundColor(Color.white.opacity(0.6))
                                 }
@@ -176,7 +176,7 @@ struct ContributeToGoalView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "chart.line.uptrend.xyaxis")
-                                    Text("+ Add Stock")
+                                    Text("+ \(L10n.Assets.stock)")
                                 }
                                 .font(.caption.bold())
                                 .foregroundColor(Color(hex: "a78bfa"))
@@ -194,7 +194,7 @@ struct ContributeToGoalView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "bitcoinsign.circle")
-                                    Text("+ Add Crypto")
+                                    Text("+ \(L10n.Assets.crypto)")
                                 }
                                 .font(.caption.bold())
                                 .foregroundColor(Color(hex: "fbbf24"))
@@ -212,7 +212,7 @@ struct ContributeToGoalView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "banknote")
-                                    Text("+ Add Cash")
+                                    Text("+ \(L10n.Accounts.typeCash)")
                                 }
                                 .font(.caption.bold())
                                 .foregroundColor(Color(hex: "34d399"))
@@ -279,7 +279,7 @@ struct ContributeToGoalView: View {
                                 } else {
                                     HStack {
                                         Image(systemName: "arrow.up.right.circle.fill")
-                                        Text("Contribute \(totalContribution > 0 ? totalContribution.formatted(currencyCode: goal.currencyCode) : "")")
+                                        Text("\(L10n.Savings.contribute) \(totalContribution > 0 ? totalContribution.formatted(currencyCode: goal.currencyCode) : "")")
                                     }
                                     .font(.headline.bold())
                                     .foregroundColor(.white)
@@ -300,11 +300,11 @@ struct ContributeToGoalView: View {
                     .padding(20)
                 }
             }
-            .navigationTitle("Contribute to Goal")
+            .navigationTitle(L10n.Savings.contributeToGoal)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
@@ -423,7 +423,7 @@ struct ContributionItemCard: View {
             switch item.type {
             case .cash:
                 VStack(alignment: .leading, spacing: 6) {
-                    Label("Cash Amount (\(goalCurrency))", systemImage: "banknote")
+                    Label("\(L10n.Assets.cashAmount) (\(goalCurrency))", systemImage: "banknote")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(Color.white.opacity(0.6))
                     TextField("0.00", text: $item.cashAmount)
@@ -457,7 +457,7 @@ struct ContributionItemCard: View {
                                 Button {
                                     Task { await item.fetchQuote() }
                                 } label: {
-                                    Text("Quote")
+                                    Text(L10n.Assets.quote)
                                         .font(.caption.bold())
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 10)
@@ -498,7 +498,7 @@ struct ContributionItemCard: View {
                                     .font(.caption.bold())
                                     .foregroundColor(Color(hex: "34d399"))
                                 Spacer()
-                                Button("Use Price") {
+                                Button(L10n.Assets.usePrice) {
                                     item.unitPrice = String(format: "%.4f", quote.resolvedPrice)
                                 }
                                 .font(.caption2.bold())
@@ -513,7 +513,7 @@ struct ContributionItemCard: View {
                     // Quantity and Price
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Quantity")
+                            Text(L10n.Assets.quantity)
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.6))
                             TextField("1", text: $item.quantity)
@@ -526,7 +526,7 @@ struct ContributionItemCard: View {
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Price / Unit")
+                            Text(L10n.Assets.pricePerUnit)
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.6))
                             TextField("0.00", text: $item.unitPrice)
@@ -539,7 +539,7 @@ struct ContributionItemCard: View {
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Fee")
+                            Text(L10n.Assets.fee)
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.6))
                             TextField("0", text: $item.fee)
@@ -557,7 +557,7 @@ struct ContributionItemCard: View {
             // Item total preview
             if item.calculatedAmount > 0 {
                 HStack {
-                    Text("Item Value:")
+                    Text(L10n.Assets.itemValue)
                         .font(.caption2)
                         .foregroundColor(Color.white.opacity(0.5))
                     Spacer()

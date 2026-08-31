@@ -91,9 +91,12 @@ struct TransactionPeriodHelper {
     ) -> String {
         let calendar = Calendar.current
 
+        let locale = LocalizationManager.shared.currentLocale
+
         switch mode {
         case .period:
             let f = DateFormatter()
+            f.locale = locale
             f.dateFormat = "MMM d, yyyy"
             let fromStr = f.string(from: customFrom ?? anchorDate)
             let toStr = f.string(from: customTo ?? anchorDate)
@@ -103,32 +106,38 @@ struct TransactionPeriodHelper {
         case .day:
             if calendar.isDateInToday(anchorDate) {
                 let f = DateFormatter()
+                f.locale = locale
                 f.dateFormat = "MMM d, yyyy"
-                return "Today • \(f.string(from: anchorDate))"
+                return "\(L10n.Transactions.today) • \(f.string(from: anchorDate))"
             }
             let f = DateFormatter()
+            f.locale = locale
             f.dateFormat = "MMMM d, yyyy"
-            return f.string(from: anchorDate)
+            return f.string(from: anchorDate).capitalized
 
         case .week:
             let (fromStr, toStr) = dateRange(mode: .week, anchorDate: anchorDate)
             if let fDate = isoFormatter.date(from: fromStr),
                let tDate = isoFormatter.date(from: toStr) {
                 let f = DateFormatter()
+                f.locale = locale
                 f.dateFormat = "MMM d"
                 let t = DateFormatter()
+                t.locale = locale
                 t.dateFormat = "MMM d, yyyy"
                 return "\(f.string(from: fDate)) — \(t.string(from: tDate))"
             }
-            return "This Week"
+            return L10n.DateRange.thisWeek
 
         case .month:
             let f = DateFormatter()
-            f.dateFormat = "MMMM yyyy"
-            return f.string(from: anchorDate)
+            f.locale = locale
+            f.dateFormat = "LLLL yyyy"
+            return f.string(from: anchorDate).capitalized
 
         case .year:
             let f = DateFormatter()
+            f.locale = locale
             f.dateFormat = "yyyy"
             return f.string(from: anchorDate)
         }
@@ -343,7 +352,7 @@ struct TransactionBreakdownChartView: View {
                                 .frame(width: 170, height: 170)
 
                             VStack(spacing: 2) {
-                                Text(activeType == .expense ? "TOTAL EXPENSES" : "TOTAL INCOME")
+                                Text(activeType == .expense ? L10n.Transactions.expenses.uppercased() : L10n.Transactions.income.uppercased())
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(Color.white.opacity(0.4))
                                 Text(0.0.formatted(currencyCode: currencyCode))
@@ -353,7 +362,7 @@ struct TransactionBreakdownChartView: View {
                         }
                         .padding(.vertical, 14)
 
-                        Text("No activity logged for this period")
+                        Text(L10n.Transactions.noCategoryActivity)
                             .font(.caption)
                             .foregroundColor(Color.white.opacity(0.4))
                     }
@@ -381,7 +390,7 @@ struct TransactionBreakdownChartView: View {
 
                         // Center content overlay
                         VStack(spacing: 2) {
-                            Text(activeType == .expense ? "TOTAL EXPENSES" : "TOTAL INCOME")
+                            Text(activeType == .expense ? L10n.Transactions.expenses.uppercased() : L10n.Transactions.income.uppercased())
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(Color.white.opacity(0.45))
                                 .tracking(0.5)
@@ -494,7 +503,7 @@ struct CategoryBreakdownListView: View {
 
                                     Capsule()
                                         .fill(itemColor)
-                                        .frame(width: max(3, geo.size.width * CGFloat(min(1.0, item.percentage / 100.0))), height: 3)
+                                        .frame(width: max(3, geo.size.width * CGFloat(min(1.0, max(0.0, item.safePercentage / 100.0)))), height: 3)
                                 }
                             }
                             .frame(height: 3)
@@ -504,7 +513,7 @@ struct CategoryBreakdownListView: View {
                         Spacer()
 
                         // Percentage
-                        Text("\(Int(round(item.percentage)))%")
+                        Text(item.formattedPercentage)
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
                             .foregroundColor(Color.white.opacity(0.6))
                             .frame(minWidth: 40, alignment: .trailing)
@@ -570,7 +579,7 @@ struct CategoryTransactionsSheet: View {
                         Image(systemName: "tray")
                             .font(.system(size: 40))
                             .foregroundColor(Color.white.opacity(0.2))
-                        Text("No transactions found in this period")
+                        Text(L10n.Transactions.noTransactions)
                             .font(.subheadline)
                             .foregroundColor(Color.white.opacity(0.4))
                     }
@@ -593,7 +602,7 @@ struct CategoryTransactionsSheet: View {
                                     Text(category.categoryName)
                                         .font(.title3.bold())
                                         .foregroundColor(.white)
-                                    Text("\(transactions.count) transactions")
+                                    Text(L10n.Transactions.totalCountSubtitle(count: transactions.count))
                                         .font(.caption)
                                         .foregroundColor(Color.white.opacity(0.5))
                                 }
@@ -634,18 +643,18 @@ struct CategoryTransactionsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                    Button(L10n.Common.done) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
-            .confirmationDialog("Delete Transaction", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
+            .confirmationDialog(L10n.Transactions.deleteTransaction, isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+                Button(L10n.Common.delete, role: .destructive) {
                     if let tx = transactionToDelete {
                         transactions.removeAll { $0.id == tx.id }
                         onDelete(tx.id)
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(L10n.Common.cancel, role: .cancel) {}
             } message: {
                 if let tx = transactionToDelete {
                     Text("Delete transaction for \(tx.amount.formatted(currencyCode: tx.currencyCode))?")
@@ -793,18 +802,19 @@ final class TransactionsViewModel {
         guard let date = formatter.date(from: dateStr) else { return dateStr }
 
         let calendar = Calendar.current
+        let locale = LocalizationManager.shared.currentLocale
+        let displayFormatter = DateFormatter()
+        displayFormatter.locale = locale
+
         if calendar.isDateInToday(date) {
-            let displayFormatter = DateFormatter()
             displayFormatter.dateFormat = "MMM d"
-            return "Today • \(displayFormatter.string(from: date))"
+            return "\(L10n.Transactions.today) • \(displayFormatter.string(from: date))"
         } else if calendar.isDateInYesterday(date) {
-            let displayFormatter = DateFormatter()
             displayFormatter.dateFormat = "MMM d"
-            return "Yesterday • \(displayFormatter.string(from: date))"
+            return "\(L10n.Transactions.yesterday) • \(displayFormatter.string(from: date))"
         } else {
-            let displayFormatter = DateFormatter()
             displayFormatter.dateFormat = "EEEE, MMM d, yyyy"
-            return displayFormatter.string(from: date)
+            return displayFormatter.string(from: date).capitalized
         }
     }
 
@@ -1067,12 +1077,12 @@ struct TransactionsView: View {
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) {
+            Button(L10n.Common.delete, role: .destructive) {
                 if let tx = transactionToDelete {
                     Task { await viewModel.delete(id: tx.id) }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
             if let tx = transactionToDelete {
                 Text("Are you sure you want to delete this transaction for \(tx.amount.formatted(currencyCode: tx.currencyCode))?")
@@ -1092,7 +1102,7 @@ struct TransactionsView: View {
                     viewModel.selectAccount(nil)
                 } label: {
                     HStack {
-                        Text("💰 Total (All Accounts)")
+                        Text("💰 \(L10n.Transactions.allAccountsTotal)")
                         if viewModel.selectedAccountId == nil {
                             Image(systemName: "checkmark")
                         }
@@ -1172,18 +1182,18 @@ struct TransactionsView: View {
                         initialAddType = .expense
                         showAddTransaction = true
                     } label: {
-                        Label("New Transaction", systemImage: "plus.circle")
+                        Label(L10n.Transactions.newTransaction, systemImage: "plus.circle")
                     }
                     Button {
                         initialAddType = .transfer
                         showAddTransaction = true
                     } label: {
-                        Label("Transfer Funds", systemImage: "arrow.left.arrow.right.circle")
+                        Label(L10n.Transactions.transferFunds, systemImage: "arrow.left.arrow.right.circle")
                     }
                     Button {
                         showAddCategory = true
                     } label: {
-                        Label("New Category", systemImage: "tag")
+                        Label(L10n.Transactions.newCategory, systemImage: "tag")
                     }
                 } label: {
                     Image(systemName: "plus.circle.fill")
@@ -1210,7 +1220,7 @@ struct TransactionsView: View {
                 }
             } label: {
                 VStack(spacing: 6) {
-                    Text("EXPENSES")
+                    Text(L10n.Transactions.expenses.uppercased())
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(viewModel.activeType == .expense ? .white : Color.white.opacity(0.4))
                         .tracking(1)
@@ -1230,7 +1240,7 @@ struct TransactionsView: View {
                 }
             } label: {
                 VStack(spacing: 6) {
-                    Text("INCOME")
+                    Text(L10n.Transactions.income.uppercased())
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(viewModel.activeType == .income ? .white : Color.white.opacity(0.4))
                         .tracking(1)
@@ -1264,7 +1274,7 @@ struct TransactionsView: View {
                     }
                 } label: {
                     VStack(spacing: 4) {
-                        Text(mode.rawValue)
+                        Text(mode.displayName)
                             .font(.system(size: 13, weight: isSelected ? .bold : .medium))
                             .foregroundColor(isSelected ? Color(hex: "34d399") : Color.white.opacity(0.5))
 
@@ -1377,9 +1387,9 @@ struct TransactionsView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "arrow.left.arrow.right.square")
                         .font(.system(size: 48)).foregroundColor(Color.white.opacity(0.2))
-                    Text("No transactions found").font(.headline).foregroundColor(Color.white.opacity(0.4))
+                    Text(L10n.Transactions.noTransactionsFound).font(.headline).foregroundColor(Color.white.opacity(0.4))
                     if !viewModel.searchText.isEmpty || !viewModel.selectedType.isEmpty || !viewModel.fromDate.isEmpty || !viewModel.toDate.isEmpty {
-                        Button("Reset Filters") {
+                        Button(L10n.Transactions.resetFilters) {
                             viewModel.reset()
                         }
                         .font(.caption.bold())
@@ -1438,7 +1448,7 @@ struct TransactionsView: View {
                     Button {
                         Task { await viewModel.loadTransactions(page: viewModel.currentPage + 1) }
                     } label: {
-                        Text("Load More")
+                        Text(L10n.Transactions.loadMore)
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(Color(hex: "a78bfa"))
                             .frame(maxWidth: .infinity)
@@ -1455,19 +1465,19 @@ struct TransactionsView: View {
     private var customDatePickerSheet: some View {
         NavigationStack {
             Form {
-                Section("Date Range") {
-                    DatePicker("From Date", selection: $tempStartDate, displayedComponents: .date)
-                    DatePicker("To Date", selection: $tempEndDate, displayedComponents: .date)
+                Section(L10n.Transactions.dateRange) {
+                    DatePicker(L10n.Transactions.fromDate, selection: $tempStartDate, displayedComponents: .date)
+                    DatePicker(L10n.Transactions.toDate, selection: $tempEndDate, displayedComponents: .date)
                 }
             }
-            .navigationTitle("Select Custom Period")
+            .navigationTitle(L10n.Transactions.selectCustomPeriod)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { showDatePicker = false }
+                    Button(L10n.Common.cancel) { showDatePicker = false }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Apply") {
+                    Button(L10n.Common.apply) {
                         viewModel.applyCustomRange(from: tempStartDate, to: tempEndDate)
                         showDatePicker = false
                     }

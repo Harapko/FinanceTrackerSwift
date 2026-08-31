@@ -7,9 +7,9 @@ enum CategoryTypeOption: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .expense: return "Expense"
-        case .income: return "Income"
-        case .both: return "Both"
+        case .expense: return L10n.Categories.typeExpense
+        case .income: return L10n.Categories.typeIncome
+        case .both: return L10n.Categories.typeBoth
         }
     }
 

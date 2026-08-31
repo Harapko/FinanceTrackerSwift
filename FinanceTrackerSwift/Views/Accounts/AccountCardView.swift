@@ -65,7 +65,7 @@ struct AccountCardView: View {
                         Button {
                             onAddAsset()
                         } label: {
-                            Label("Buy / Add Asset (Stock/Crypto)", systemImage: "chart.line.uptrend.xyaxis")
+                            Label(L10n.Accounts.buyAddAsset, systemImage: "chart.line.uptrend.xyaxis")
                         }
 
                         Button {
@@ -77,7 +77,7 @@ struct AccountCardView: View {
                         Button {
                             onEdit()
                         } label: {
-                            Label("Edit Account", systemImage: "pencil")
+                            Label(L10n.Accounts.editAccount, systemImage: "pencil")
                         }
 
                         Divider()
@@ -85,7 +85,7 @@ struct AccountCardView: View {
                         Button(role: .destructive) {
                             onDelete()
                         } label: {
-                            Label("Delete Account", systemImage: "trash")
+                            Label(L10n.Accounts.deleteAccount, systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -264,7 +264,7 @@ struct SubAccountCardRow: View {
                         .foregroundColor(.white)
 
                     if (subAccount.holdingsValue ?? 0) > 0 {
-                        Text("Holdings: \((subAccount.holdingsValue ?? 0).formatted(currencyCode: subAccount.currencyCode))")
+                        Text(L10n.Accounts.holdingsFormatted((subAccount.holdingsValue ?? 0).formatted(currencyCode: subAccount.currencyCode)))
                             .font(.system(size: 9))
                             .foregroundColor(Color(hex: "34d399"))
                     }
@@ -274,13 +274,13 @@ struct SubAccountCardRow: View {
                     Button {
                         onAddAsset()
                     } label: {
-                        Label("Buy / Add Asset (Stock/Crypto)", systemImage: "chart.line.uptrend.xyaxis")
+                        Label(L10n.Accounts.buyAddAsset, systemImage: "chart.line.uptrend.xyaxis")
                     }
 
                     Button {
                         onEdit()
                     } label: {
-                        Label("Edit Sub-Account", systemImage: "pencil")
+                        Label(L10n.Accounts.editSubAccount, systemImage: "pencil")
                     }
 
                     Divider()
@@ -288,7 +288,7 @@ struct SubAccountCardRow: View {
                     Button(role: .destructive) {
                         onDelete()
                     } label: {
-                        Label("Delete Sub-Account", systemImage: "trash")
+                        Label(L10n.Accounts.deleteSubAccount, systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -342,7 +342,7 @@ struct AccountHoldingsSection: View {
         if !holdings.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Label("Holdings & Assets", systemImage: "chart.pie.fill")
+                    Label(L10n.Accounts.holdingsAndAssets, systemImage: "chart.pie.fill")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color.white.opacity(0.6))
                     Spacer()

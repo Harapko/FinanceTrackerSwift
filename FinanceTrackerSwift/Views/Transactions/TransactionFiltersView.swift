@@ -8,6 +8,18 @@ enum DateFilterPreset: String, CaseIterable {
     case last30Days = "Last 30 Days"
     case thisYear = "This Year"
     case custom = "Custom"
+
+    var displayName: String {
+        switch self {
+        case .all: return L10n.DateRange.allTime
+        case .today: return L10n.DateRange.today
+        case .thisWeek: return L10n.DateRange.thisWeek
+        case .thisMonth: return L10n.DateRange.thisMonth
+        case .last30Days: return L10n.DateRange.last30Days
+        case .thisYear: return L10n.DateRange.thisYear
+        case .custom: return L10n.DateRange.custom
+        }
+    }
 }
 
 struct TransactionFiltersView: View {
@@ -26,11 +38,12 @@ struct TransactionFiltersView: View {
         return f
     }()
 
-    private let displayFormatter: DateFormatter = {
+    private var displayFormatter: DateFormatter {
         let f = DateFormatter()
+        f.locale = LocalizationManager.shared.currentLocale
         f.dateFormat = "MMM d, yyyy"
         return f
-    }()
+    }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -38,7 +51,7 @@ struct TransactionFiltersView: View {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(Color.white.opacity(0.4))
-                TextField("Search payee, description...", text: $viewModel.searchText)
+                TextField(L10n.Transactions.searchPlaceholder, text: $viewModel.searchText)
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                 if !viewModel.searchText.isEmpty {
@@ -56,113 +69,72 @@ struct TransactionFiltersView: View {
 
             // 2. Type Selector Pills
             HStack(spacing: 8) {
-                typeFilterPill(title: "All Types", typeValue: "")
-                typeFilterPill(title: "Expense", typeValue: "Expense", activeColor: Color(hex: "f87171"))
-                typeFilterPill(title: "Income", typeValue: "Income", activeColor: Color(hex: "34d399"))
-                typeFilterPill(title: "Transfer", typeValue: "Transfer", activeColor: Color(hex: "60a5fa"))
+                typeFilterPill(title: L10n.Transactions.allTypes, typeValue: "")
+                typeFilterPill(title: L10n.Transactions.typeExpense, typeValue: "Expense", activeColor: Color(hex: "f87171"))
+                typeFilterPill(title: L10n.Transactions.typeIncome, typeValue: "Income", activeColor: Color(hex: "34d399"))
+                typeFilterPill(title: L10n.Transactions.typeTransfer, typeValue: "Transfer", activeColor: Color(hex: "818cf8"))
             }
 
-            // 3. Date Presets Scroll
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Date Range", systemImage: "calendar")
-                    .font(.caption.bold())
-                    .foregroundColor(Color.white.opacity(0.6))
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(DateFilterPreset.allCases, id: \.self) { preset in
-                            let isSelected = selectedPreset == preset
-                            Button {
-                                applyPreset(preset)
-                            } label: {
-                                Text(preset.rawValue)
-                                    .font(.caption.weight(isSelected ? .bold : .medium))
-                                    .foregroundColor(isSelected ? .white : Color.white.opacity(0.7))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(isSelected ? Color(hex: "818cf8") : Color.white.opacity(0.06))
-                                    .clipShape(Capsule())
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(isSelected ? Color(hex: "a78bfa") : Color.white.opacity(0.08), lineWidth: 1)
-                                    )
-                            }
+            // 3. Quick Date Range Presets Scroll
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(DateFilterPreset.allCases, id: \.self) { preset in
+                        let isSelected = selectedPreset == preset
+                        Button {
+                            applyPreset(preset)
+                        } label: {
+                            Text(preset.displayName)
+                                .font(.caption.weight(isSelected ? .bold : .medium))
+                                .foregroundColor(isSelected ? .white : Color.white.opacity(0.6))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(isSelected ? Color(hex: "a78bfa") : Color.white.opacity(0.05))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(isSelected ? Color(hex: "a78bfa") : Color.white.opacity(0.08), lineWidth: 1)
+                                )
                         }
                     }
                 }
             }
 
-            // 4. Custom Date Range Pickers (Interactive)
-            HStack(spacing: 10) {
-                // From Date Button
+            // 4. Custom Date Range Pickers (From / To inputs)
+            HStack(spacing: 12) {
+                // From Date
                 Button {
                     showFromDatePicker = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "calendar.badge.clock")
+                    HStack {
+                        Image(systemName: "calendar")
                             .font(.caption)
-                            .foregroundColor(Color(hex: "818cf8"))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("From")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(Color.white.opacity(0.4))
-                            Text(viewModel.fromDate.isEmpty ? "Start date" : formattedDisplayDate(viewModel.fromDate))
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(viewModel.fromDate.isEmpty ? Color.white.opacity(0.4) : .white)
-                                .lineLimit(1)
-                        }
+                            .foregroundColor(Color.white.opacity(0.4))
+                        Text(viewModel.fromDate.isEmpty ? L10n.Transactions.fromDate : formattedDisplayDate(viewModel.fromDate))
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(viewModel.fromDate.isEmpty ? Color.white.opacity(0.4) : .white)
                         Spacer()
-                        if !viewModel.fromDate.isEmpty {
-                            Button {
-                                viewModel.fromDate = ""
-                                selectedPreset = .custom
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(Color.white.opacity(0.4))
-                            }
-                        }
                     }
                     .padding(10)
                     .background(Color.white.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(!viewModel.fromDate.isEmpty ? Color(hex: "818cf8").opacity(0.5) : Color.white.opacity(0.06), lineWidth: 1)
+                            .stroke(!viewModel.fromDate.isEmpty ? Color(hex: "a78bfa").opacity(0.5) : Color.white.opacity(0.06), lineWidth: 1)
                     )
                 }
 
-                Text("–")
-                    .foregroundColor(Color.white.opacity(0.4))
-
-                // To Date Button
+                // To Date
                 Button {
                     showToDatePicker = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "calendar.badge.clock")
+                    HStack {
+                        Image(systemName: "calendar")
                             .font(.caption)
-                            .foregroundColor(Color(hex: "a78bfa"))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("To")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(Color.white.opacity(0.4))
-                            Text(viewModel.toDate.isEmpty ? "End date" : formattedDisplayDate(viewModel.toDate))
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(viewModel.toDate.isEmpty ? Color.white.opacity(0.4) : .white)
-                                .lineLimit(1)
-                        }
+                            .foregroundColor(Color.white.opacity(0.4))
+                        Text(viewModel.toDate.isEmpty ? L10n.Transactions.toDate : formattedDisplayDate(viewModel.toDate))
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(viewModel.toDate.isEmpty ? Color.white.opacity(0.4) : .white)
                         Spacer()
-                        if !viewModel.toDate.isEmpty {
-                            Button {
-                                viewModel.toDate = ""
-                                selectedPreset = .custom
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(Color.white.opacity(0.4))
-                            }
-                        }
                     }
                     .padding(10)
                     .background(Color.white.opacity(0.05))
@@ -182,7 +154,7 @@ struct TransactionFiltersView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.counterclockwise")
-                        Text("Reset All")
+                        Text(L10n.Transactions.resetAll)
                     }
                     .font(.subheadline.bold())
                     .foregroundColor(Color.white.opacity(0.6))
@@ -197,7 +169,7 @@ struct TransactionFiltersView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark")
-                        Text("Apply Filters")
+                        Text(L10n.Transactions.applyFilters)
                     }
                     .font(.subheadline.bold())
                     .foregroundColor(.white)
@@ -221,14 +193,14 @@ struct TransactionFiltersView: View {
         )
         .sheet(isPresented: $showFromDatePicker) {
             NavigationStack {
-                DatePicker("From Date", selection: $fromDateVal, displayedComponents: .date)
+                DatePicker(L10n.Transactions.fromDate, selection: $fromDateVal, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .padding()
-                    .navigationTitle("Select Start Date")
+                    .navigationTitle(L10n.Transactions.selectStartDate)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Clear") {
+                            Button(L10n.Common.clear) {
                                 viewModel.fromDate = ""
                                 selectedPreset = .custom
                                 showFromDatePicker = false
@@ -236,7 +208,7 @@ struct TransactionFiltersView: View {
                             .foregroundColor(Color(hex: "f87171"))
                         }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") {
+                            Button(L10n.Common.done) {
                                 viewModel.fromDate = apiFormatter.string(from: fromDateVal)
                                 selectedPreset = .custom
                                 showFromDatePicker = false
@@ -249,14 +221,14 @@ struct TransactionFiltersView: View {
         }
         .sheet(isPresented: $showToDatePicker) {
             NavigationStack {
-                DatePicker("To Date", selection: $toDateVal, displayedComponents: .date)
+                DatePicker(L10n.Transactions.toDate, selection: $toDateVal, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .padding()
-                    .navigationTitle("Select End Date")
+                    .navigationTitle(L10n.Transactions.selectEndDate)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Clear") {
+                            Button(L10n.Common.clear) {
                                 viewModel.toDate = ""
                                 selectedPreset = .custom
                                 showToDatePicker = false
@@ -264,7 +236,7 @@ struct TransactionFiltersView: View {
                             .foregroundColor(Color(hex: "f87171"))
                         }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") {
+                            Button(L10n.Common.done) {
                                 viewModel.toDate = apiFormatter.string(from: toDateVal)
                                 selectedPreset = .custom
                                 showToDatePicker = false

@@ -67,9 +67,9 @@ struct AddAssetView: View {
                         .pickerStyle(.segmented)
 
                         // Instrument Type (Stock / Crypto)
-                        Picker("Instrument Type", selection: $instrumentType) {
+                        Picker(L10n.Assets.assetType, selection: $instrumentType) {
                             ForEach(instrumentTypes, id: \.self) { t in
-                                Text(t).tag(t)
+                                Text(t == "Crypto" ? L10n.Assets.crypto : L10n.Assets.stock).tag(t)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -80,7 +80,7 @@ struct AddAssetView: View {
 
                         // Symbol with Quote button
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Asset Symbol", systemImage: "magnifyingglass")
+                            Label(L10n.Assets.symbol, systemImage: "magnifyingglass")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
 
@@ -103,7 +103,7 @@ struct AddAssetView: View {
                                         HStack(spacing: 4) {
                                             Image(systemName: "bolt.fill")
                                                 .font(.system(size: 10))
-                                            Text("Quote")
+                                            Text(L10n.Assets.quote)
                                                 .font(.caption.weight(.bold))
                                         }
                                         .foregroundColor(.white)
@@ -170,7 +170,7 @@ struct AddAssetView: View {
                                             currencyCode = cur
                                         }
                                     } label: {
-                                        Text("Use Price")
+                                        Text(L10n.Assets.usePrice)
                                             .font(.caption.bold())
                                             .foregroundColor(Color(hex: "a78bfa"))
                                             .padding(.horizontal, 10)
@@ -188,11 +188,11 @@ struct AddAssetView: View {
 
                         // Destination Account
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Destination Account", systemImage: "building.columns")
+                            Label(L10n.Assets.destinationAccount, systemImage: "building.columns")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
                             Picker("Account", selection: $selectedAccountId) {
-                                Text("Select Account").tag("")
+                                Text(L10n.Transactions.selectAccount).tag("")
                                 ForEach(accounts) { a in
                                     Text("\(a.name) (\(a.currencyCode))").tag(a.id)
                                 }
@@ -229,7 +229,7 @@ struct AddAssetView: View {
                         // Quantity & Price Row
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 12) {
-                                formField("Quantity", icon: "number") {
+                                formField(L10n.Assets.quantity, icon: "number") {
                                     TextField("1", text: $quantity)
                                         .keyboardType(.decimalPad)
                                 }
@@ -276,7 +276,7 @@ struct AddAssetView: View {
                         }
 
                         // Notes
-                        formField("Notes (optional)", icon: "text.alignleft") {
+                        formField(L10n.Assets.notesOptional, icon: "text.alignleft") {
                             TextField("e.g. Vanguard ETF purchase, DCA...", text: $notes)
                         }
 
@@ -343,11 +343,11 @@ struct AddAssetView: View {
                     .padding(20)
                 }
             }
-            .navigationTitle("\(tradeType) Asset")
+            .navigationTitle(L10n.Assets.addAssetTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }

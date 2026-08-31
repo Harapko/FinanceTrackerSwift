@@ -58,19 +58,19 @@ struct SavingsGoalCardView: View {
                     Button {
                         onContribute()
                     } label: {
-                        Label("Contribute", systemImage: "plus.circle")
+                        Label(L10n.Savings.contribute, systemImage: "plus.circle")
                     }
 
                     Button {
                         onManageAllocations()
                     } label: {
-                        Label("Allocations & History", systemImage: "chart.pie")
+                        Label(L10n.Savings.manageAllocations, systemImage: "chart.pie")
                     }
 
                     Button {
                         onEdit()
                     } label: {
-                        Label("Edit Goal", systemImage: "pencil")
+                        Label(L10n.Savings.editGoal, systemImage: "pencil")
                     }
 
                     Divider()
@@ -78,7 +78,7 @@ struct SavingsGoalCardView: View {
                     Button(role: .destructive) {
                         onDelete()
                     } label: {
-                        Label("Delete Goal", systemImage: "trash")
+                        Label(L10n.Savings.deleteGoal, systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -102,14 +102,14 @@ struct SavingsGoalCardView: View {
             if !goal.savedInstrumentsList.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Label("Assets & Holdings", systemImage: "chart.pie.fill")
+                        Label(L10n.Savings.allocatedAssets, systemImage: "chart.pie.fill")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(Color.white.opacity(0.5))
                         Spacer()
                         Button {
                             onManageAllocations()
                         } label: {
-                            Text("Manage")
+                            Text(L10n.Savings.manage)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(Color(hex: "a78bfa"))
                         }
@@ -150,7 +150,7 @@ struct SavingsGoalCardView: View {
                         Text(goal.currentAmount.formatted(currencyCode: goal.currencyCode))
                             .font(.title3.bold())
                             .foregroundColor(.white)
-                        Text("Saved of \(goal.targetAmount > 0 ? goal.targetAmount.formatted(currencyCode: goal.currencyCode) : "Open Target")")
+                        Text(L10n.Savings.savedOf(current: goal.currentAmount.formatted(currencyCode: goal.currencyCode), target: goal.targetAmount > 0 ? goal.targetAmount.formatted(currencyCode: goal.currencyCode) : L10n.Savings.openGoal))
                             .font(.caption2)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
@@ -183,7 +183,7 @@ struct SavingsGoalCardView: View {
                     HStack {
                         Image(systemName: "calendar")
                             .font(.caption2)
-                        Text("Target: \(deadline)")
+                        Text("\(L10n.Savings.target): \(deadline)")
                             .font(.caption2)
                     }
                     .foregroundColor(Color.white.opacity(0.4))
@@ -197,7 +197,7 @@ struct SavingsGoalCardView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus.circle.fill")
-                        Text("Contribute")
+                        Text(L10n.Savings.contribute)
                     }
                     .font(.subheadline.bold())
                     .foregroundColor(.white)

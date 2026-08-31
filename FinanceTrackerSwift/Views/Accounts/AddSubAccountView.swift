@@ -26,13 +26,13 @@ struct AddSubAccountView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         // Sub-Account Name
-                        formField("Sub-Account Name", icon: "square.grid.2x2") {
-                            TextField("e.g. Emergency Savings", text: $name)
+                        formField(L10n.Accounts.subAccountName, icon: "square.grid.2x2") {
+                            TextField(L10n.Accounts.subAccountNamePlaceholder, text: $name)
                         }
 
                         // Type
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Sub-Account Type", systemImage: "creditcard")
+                            Label(L10n.Accounts.subAccountType, systemImage: "creditcard")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
                             Picker("Type", selection: $type) {
@@ -50,7 +50,7 @@ struct AddSubAccountView: View {
 
                         // Currency
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Currency", systemImage: "dollarsign.circle")
+                            Label(L10n.Common.currency, systemImage: "dollarsign.circle")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
                             Menu {
@@ -75,8 +75,8 @@ struct AddSubAccountView: View {
                         }
 
                         // Description
-                        formField("Description (optional)", icon: "text.alignleft") {
-                            TextField("Notes or purpose...", text: $description)
+                        formField(L10n.Accounts.descriptionOptional, icon: "text.alignleft") {
+                            TextField(L10n.Accounts.descriptionPlaceholder, text: $description)
                         }
 
                         if let error = errorMessage {
@@ -98,7 +98,7 @@ struct AddSubAccountView: View {
                                 if isLoading {
                                     ProgressView().tint(.white)
                                 } else {
-                                    Text(isEditing ? "Save Changes" : "Create Sub-Account")
+                                    Text(isEditing ? L10n.Profile.saveChanges : L10n.Accounts.modalCreateSubTitle)
                                         .font(.headline)
                                         .foregroundColor(.white)
                                 }
@@ -118,11 +118,11 @@ struct AddSubAccountView: View {
                     .padding(20)
                 }
             }
-            .navigationTitle(isEditing ? "Edit Sub-Account" : "New Sub-Account")
+            .navigationTitle(isEditing ? L10n.Accounts.modalEditSubTitle : L10n.Accounts.modalCreateSubTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }

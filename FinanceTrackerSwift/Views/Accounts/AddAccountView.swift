@@ -136,7 +136,7 @@ struct AddAccountView: View {
 
                         // 4. Accent Color Ribbon
                         VStack(alignment: .leading, spacing: 10) {
-                            Label("Accent Color", systemImage: "paintpalette.fill")
+                            Label(L10n.Accounts.themeColor, systemImage: "paintpalette.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
 
@@ -164,11 +164,11 @@ struct AddAccountView: View {
 
                         // 5. Description (Optional)
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Description (optional)", systemImage: "text.alignleft")
+                            Label(L10n.Accounts.descriptionOptional, systemImage: "text.alignleft")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
 
-                            TextField("Notes or description...", text: $description)
+                            TextField(L10n.Accounts.descriptionPlaceholder, text: $description)
                                 .textFieldStyle(.plain)
                                 .padding(14)
                                 .background(Color.white.opacity(0.05))
@@ -211,7 +211,7 @@ struct AddAccountView: View {
                             } else {
                                 HStack(spacing: 8) {
                                     Image(systemName: isEditing ? "checkmark.circle.fill" : "plus.circle.fill")
-                                    Text(isEditing ? "Save Changes" : "Create Account")
+                                    Text(isEditing ? L10n.Profile.saveChanges : L10n.Accounts.modalCreateTitle)
                                         .font(.headline.bold())
                                 }
                                 .foregroundColor(.white)
@@ -234,11 +234,11 @@ struct AddAccountView: View {
                 }
                 .background(Color(hex: "0d1117").opacity(0.95))
             }
-            .navigationTitle(isEditing ? "Edit Account" : "New Account")
+            .navigationTitle(isEditing ? L10n.Accounts.modalEditTitle : L10n.Accounts.modalCreateTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }

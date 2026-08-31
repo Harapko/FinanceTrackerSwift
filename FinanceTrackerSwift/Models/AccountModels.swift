@@ -10,12 +10,12 @@ enum AccountType: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .bankAccount: return "Bank Account"
-        case .creditCard: return "Credit Card"
-        case .cash: return "Cash"
-        case .cryptoWallet: return "Crypto Wallet"
-        case .investmentAccount: return "Investment Account"
-        case .other: return "Other"
+        case .bankAccount: return L10n.Accounts.typeBankAccount
+        case .creditCard: return L10n.Accounts.typeCreditCard
+        case .cash: return L10n.Accounts.typeCash
+        case .cryptoWallet: return L10n.Accounts.typeCryptoWallet
+        case .investmentAccount: return L10n.Accounts.typeInvestmentAccount
+        case .other: return L10n.Accounts.typeOther
         }
     }
 
@@ -41,12 +41,12 @@ enum SubAccountType: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .checking: return "Checking"
-        case .savings: return "Savings"
-        case .credit: return "Credit"
-        case .investment: return "Investment"
-        case .cash: return "Cash"
-        case .other: return "Other"
+        case .checking: return L10n.Accounts.subTypeChecking
+        case .savings: return L10n.Accounts.subTypeSavings
+        case .credit: return L10n.Accounts.subTypeCredit
+        case .investment: return L10n.Accounts.subTypeInvestment
+        case .cash: return L10n.Accounts.subTypeCash
+        case .other: return L10n.Accounts.typeOther
         }
     }
 }

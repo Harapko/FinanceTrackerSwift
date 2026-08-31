@@ -9,7 +9,7 @@ struct RecentTransactionsView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Header with View All button
             HStack {
-                Text("Recent Transactions")
+                Text(L10n.Dashboard.recentTransactions)
                     .font(.headline.bold())
                     .foregroundColor(.white)
                 Spacer()
@@ -17,7 +17,7 @@ struct RecentTransactionsView: View {
                     onViewAll()
                 } label: {
                     HStack(spacing: 4) {
-                        Text("View All")
+                        Text(L10n.Dashboard.viewAll)
                             .font(.caption.weight(.semibold))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
@@ -35,7 +35,7 @@ struct RecentTransactionsView: View {
                     Image(systemName: "arrow.left.arrow.right.circle")
                         .font(.system(size: 32))
                         .foregroundColor(Color.white.opacity(0.2))
-                    Text("No recent transactions")
+                    Text(L10n.Dashboard.noRecentTransactions)
                         .font(.subheadline)
                         .foregroundColor(Color.white.opacity(0.4))
                 }

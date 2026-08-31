@@ -2,51 +2,28 @@ import SwiftUI
 
 struct UserProfileSheet: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(LocalizationManager.self) private var localization
     @Environment(\.dismiss) private var dismiss
 
     @State private var firstName: String = ""
     @State private var lastName: String = ""
     @State private var defaultCurrencyCode: String = "USD"
-    @State private var selectedLanguage: String = "en"
     @State private var serverURL: String = AppConfig.baseURL
-
-    @State private var isSaving: Bool = false
-    @State private var showSuccessAlert: Bool = false
+    @State private var isSaving = false
     @State private var errorMessage: String?
-    @State private var showLogoutConfirmation: Bool = false
+    @State private var showSuccessAlert = false
+    @State private var showLogoutConfirmation = false
 
-    private let availableCurrencies: [(code: String, symbol: String, flag: String, name: String)] = [
-        ("USD", "$", "🇺🇸", "US Dollar"),
-        ("EUR", "€", "🇪🇺", "Euro"),
-        ("GBP", "£", "🇬🇧", "British Pound"),
-        ("UAH", "₴", "🇺🇦", "Ukrainian Hryvnia"),
-        ("PLN", "zł", "🇵🇱", "Polish Zloty"),
-        ("JPY", "¥", "🇯🇵", "Japanese Yen"),
-        ("CAD", "C$", "🇨🇦", "Canadian Dollar"),
-        ("CHF", "CHF", "🇨🇭", "Swiss Franc"),
-        ("AUD", "A$", "🇦🇺", "Australian Dollar"),
+    let currencies: [(code: String, symbol: String, name: String)] = [
+        ("USD", "$", "US Dollar"),
+        ("EUR", "€", "Euro"),
+        ("GBP", "£", "British Pound"),
+        ("UAH", "₴", "Ukrainian Hryvnia"),
+        ("PLN", "zł", "Polish Zloty"),
+        ("JPY", "¥", "Japanese Yen"),
+        ("CAD", "C$", "Canadian Dollar"),
+        ("CHF", "Fr", "Swiss Franc")
     ]
-
-    var userInitial: String {
-        let name = firstName.isEmpty ? (auth.currentUser?.firstName ?? "U") : firstName
-        return name.prefix(1).uppercased()
-    }
-
-    var hasChanges: Bool {
-        guard let user = auth.currentUser else { return false }
-        return firstName != user.firstName ||
-               lastName != user.lastName ||
-               defaultCurrencyCode != user.defaultCurrencyCode
-    }
-
-    var serverDisplayValue: String {
-        if AppConfig.baseURL.contains("localhost") || AppConfig.baseURL.contains("127.0.0.1") {
-            return "Localhost (.NET :5237)"
-        } else if AppConfig.baseURL.contains("onrender.com") {
-            return "Render Cloud"
-        }
-        return AppConfig.baseURL
-    }
 
     var body: some View {
         NavigationStack {
@@ -54,38 +31,39 @@ struct UserProfileSheet: View {
                 Color(hex: "0d1117").ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // 1. Avatar & User Header
-                        headerSection
+                    VStack(spacing: 20) {
+                        // User Avatar Card
+                        avatarSection
 
-                        // 2. Personal Information Card
+                        // Personal Info Section
                         personalInfoSection
 
-                        // 3. Primary Base Currency Card
+                        // Currency Section
                         currencySection
 
-                        // 4. Interface Language Card
+                        // Language Section
                         languageSection
 
-                        // 5. API Server Selector Card
+                        // Server URL Section
                         serverSection
 
-                        // 6. Save Changes Button
+                        // Save Button
                         saveButtonSection
 
-                        // 7. Log Out Section
+                        // Logout Button
                         logoutSection
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
+                    .padding(20)
                 }
             }
-            .navigationTitle("Profile & Settings")
+            .navigationTitle(L10n.Profile.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                        .foregroundColor(Color(hex: "a78bfa"))
+                    Button(L10n.Common.close) {
+                        dismiss()
+                    }
+                    .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
             .onAppear {
@@ -94,111 +72,109 @@ struct UserProfileSheet: View {
                     lastName = user.lastName
                     defaultCurrencyCode = user.defaultCurrencyCode
                 }
-                selectedLanguage = UserDefaults.standard.string(forKey: "app_language") ?? "en"
+                serverURL = AppConfig.baseURL
             }
-            .alert("Profile Updated", isPresented: $showSuccessAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Your profile details and primary base currency have been saved successfully.")
+            .alert(L10n.Profile.profileUpdated, isPresented: $showSuccessAlert) {
+                Button(L10n.Common.done, role: .cancel) {
+                    dismiss()
+                }
             }
             .confirmationDialog(
-                "Log Out",
+                L10n.Profile.logOutConfirmTitle,
                 isPresented: $showLogoutConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Log Out", role: .destructive) {
-                    dismiss()
+                Button(L10n.Profile.logOut, role: .destructive) {
                     auth.logout()
+                    dismiss()
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(L10n.Common.cancel, role: .cancel) {}
             } message: {
-                Text("Are you sure you want to log out of your account?")
+                Text(L10n.Profile.logOutConfirmMsg)
             }
         }
     }
 
-    // MARK: - Header
-    private var headerSection: some View {
-        VStack(spacing: 12) {
+    // MARK: - Avatar Section
+    private var avatarSection: some View {
+        HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(LinearGradient(
-                        colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 76, height: 76)
-                    .shadow(color: Color(hex: "818cf8").opacity(0.35), radius: 12, x: 0, y: 6)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 60, height: 60)
 
-                Text(userInitial)
-                    .font(.system(size: 30, weight: .bold))
+                Text(auth.currentUser?.firstName.prefix(1).uppercased() ?? "U")
+                    .font(.title2.bold())
                     .foregroundColor(.white)
             }
 
-            VStack(spacing: 4) {
-                Text("\(firstName) \(lastName)")
-                    .font(.title3.bold())
+            VStack(alignment: .leading, spacing: 3) {
+                Text(auth.currentUser?.fullName ?? "")
+                    .font(.headline.bold())
                     .foregroundColor(.white)
+                Text(auth.currentUser?.email ?? "")
+                    .font(.caption)
+                    .foregroundColor(Color.white.opacity(0.5))
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.06), lineWidth: 1))
+    }
+
+    // MARK: - Personal Info Section
+    private var personalInfoSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label(L10n.Profile.personalInfo, systemImage: "person.fill")
+                .font(.subheadline.bold())
+                .foregroundColor(Color.white.opacity(0.7))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.Profile.firstName)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color.white.opacity(0.6))
+
+                TextField(L10n.Profile.firstName, text: $firstName)
+                    .textFieldStyle(.plain)
+                    .padding(12)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .foregroundColor(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.Profile.lastName)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color.white.opacity(0.6))
+
+                TextField(L10n.Profile.lastName, text: $lastName)
+                    .textFieldStyle(.plain)
+                    .padding(12)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .foregroundColor(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.Profile.email)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color.white.opacity(0.6))
 
                 Text(auth.currentUser?.email ?? "")
                     .font(.subheadline)
-                    .foregroundColor(Color.white.opacity(0.6))
-            }
-        }
-        .padding(.top, 8)
-    }
-
-    // MARK: - Personal Information
-    private var personalInfoSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Label("Personal Information", systemImage: "person.fill")
-                .font(.headline)
-                .foregroundColor(Color(hex: "818cf8"))
-
-            VStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("First Name")
-                        .font(.caption.bold())
-                        .foregroundColor(Color.white.opacity(0.7))
-
-                    TextField("First Name", text: $firstName)
-                        .padding(12)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.1), lineWidth: 1))
-                        .foregroundColor(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Last Name")
-                        .font(.caption.bold())
-                        .foregroundColor(Color.white.opacity(0.7))
-
-                    TextField("Last Name", text: $lastName)
-                        .padding(12)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.1), lineWidth: 1))
-                        .foregroundColor(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Email (Account)")
-                        .font(.caption.bold())
-                        .foregroundColor(Color.white.opacity(0.5))
-
-                    HStack {
-                        Text(auth.currentUser?.email ?? "user@example.com")
-                            .foregroundColor(Color.white.opacity(0.5))
-                            .font(.subheadline)
-                        Spacer()
-                        Image(systemName: "lock.fill")
-                            .font(.caption)
-                            .foregroundColor(Color.white.opacity(0.4))
-                    }
+                    .foregroundColor(Color.white.opacity(0.4))
                     .padding(12)
-                    .background(Color.white.opacity(0.03))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.02))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
             }
         }
         .padding(16)
@@ -207,58 +183,58 @@ struct UserProfileSheet: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.06), lineWidth: 1))
     }
 
-    // MARK: - Primary Currency
+    // MARK: - Currency Section
     private var currencySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Label("Primary Base Currency", systemImage: "dollarsign.circle.fill")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "34d399"))
-                Spacer()
-                Text(defaultCurrencyCode)
-                    .font(.caption.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(hex: "34d399").opacity(0.15))
-                    .foregroundColor(Color(hex: "34d399"))
-                    .clipShape(Capsule())
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            Label(L10n.Profile.primaryCurrency, systemImage: "dollarsign.circle.fill")
+                .font(.subheadline.bold())
+                .foregroundColor(Color.white.opacity(0.7))
 
-            Text("Aggregates net worth, dashboards, and portfolio metrics across all accounts.")
-                .font(.caption)
-                .foregroundColor(Color.white.opacity(0.6))
+            Text(L10n.Profile.primaryCurrencyDesc)
+                .font(.caption2)
+                .foregroundColor(Color.white.opacity(0.4))
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 10)], spacing: 10) {
-                ForEach(availableCurrencies, id: \.code) { item in
-                    let isSelected = defaultCurrencyCode == item.code
+            Menu {
+                ForEach(currencies, id: \.code) { curr in
                     Button {
-                        defaultCurrencyCode = item.code
+                        defaultCurrencyCode = curr.code
                     } label: {
-                        VStack(spacing: 4) {
-                            Text(item.flag)
-                                .font(.title3)
-                            Text(item.code)
-                                .font(.subheadline.bold())
-                                .foregroundColor(isSelected ? .white : Color.white.opacity(0.8))
-                            Text(item.symbol)
-                                .font(.caption2)
-                                .foregroundColor(isSelected ? Color(hex: "a78bfa") : Color.white.opacity(0.5))
+                        HStack {
+                            Text("\(curr.symbol) \(curr.code) — \(curr.name)")
+                            if defaultCurrencyCode == curr.code {
+                                Image(systemName: "checkmark")
+                            }
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(
-                            isSelected ?
-                            LinearGradient(colors: [Color(hex: "818cf8").opacity(0.3), Color(hex: "a78bfa").opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing) :
-                            LinearGradient(colors: [Color.white.opacity(0.04), Color.white.opacity(0.04)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(isSelected ? Color(hex: "818cf8") : Color.white.opacity(0.08), lineWidth: isSelected ? 1.5 : 1)
-                        )
                     }
-                    .buttonStyle(.plain)
                 }
+            } label: {
+                HStack {
+                    if let selected = currencies.first(where: { $0.code == defaultCurrencyCode }) {
+                        Text(selected.symbol)
+                            .font(.headline.bold())
+                            .foregroundColor(Color(hex: "a78bfa"))
+                            .frame(width: 28)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("\(selected.code) — \(selected.name)")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                        }
+                    } else {
+                        Text(defaultCurrencyCode)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundColor(Color.white.opacity(0.4))
+                }
+                .padding(12)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
         .padding(16)
@@ -267,50 +243,48 @@ struct UserProfileSheet: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.06), lineWidth: 1))
     }
 
-    // MARK: - Language
+    // MARK: - Language Section
     private var languageSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Label("Interface Language", systemImage: "globe")
-                .font(.headline)
-                .foregroundColor(Color(hex: "a78bfa"))
+        VStack(alignment: .leading, spacing: 12) {
+            Label(L10n.Profile.interfaceLanguage, systemImage: "globe")
+                .font(.subheadline.bold())
+                .foregroundColor(Color.white.opacity(0.7))
 
-            HStack(spacing: 12) {
+            VStack(spacing: 8) {
                 // English option
                 Button {
-                    selectedLanguage = "en"
-                    UserDefaults.standard.set("en", forKey: "app_language")
+                    localization.setLanguage(.english)
                 } label: {
                     HStack(spacing: 10) {
-                        Text("🇬🇧")
+                        Text("🇺🇸")
                             .font(.title2)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("English")
                                 .font(.subheadline.bold())
-                                .foregroundColor(selectedLanguage == "en" ? .white : Color.white.opacity(0.7))
-                            Text("Default")
+                                .foregroundColor(!localization.isUkrainian ? .white : Color.white.opacity(0.7))
+                            Text("English (US)")
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.5))
                         }
                         Spacer()
-                        if selectedLanguage == "en" {
+                        if !localization.isUkrainian {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(Color(hex: "a78bfa"))
                         }
                     }
                     .padding(12)
-                    .background(selectedLanguage == "en" ? Color(hex: "a78bfa").opacity(0.2) : Color.white.opacity(0.04))
+                    .background(!localization.isUkrainian ? Color(hex: "a78bfa").opacity(0.2) : Color.white.opacity(0.04))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedLanguage == "en" ? Color(hex: "a78bfa") : Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(!localization.isUkrainian ? Color(hex: "a78bfa") : Color.white.opacity(0.08), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
 
                 // Ukrainian option
                 Button {
-                    selectedLanguage = "uk"
-                    UserDefaults.standard.set("uk", forKey: "app_language")
+                    localization.setLanguage(.ukrainian)
                 } label: {
                     HStack(spacing: 10) {
                         Text("🇺🇦")
@@ -318,23 +292,23 @@ struct UserProfileSheet: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Українська")
                                 .font(.subheadline.bold())
-                                .foregroundColor(selectedLanguage == "uk" ? .white : Color.white.opacity(0.7))
+                                .foregroundColor(localization.isUkrainian ? .white : Color.white.opacity(0.7))
                             Text("Ukrainian")
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.5))
                         }
                         Spacer()
-                        if selectedLanguage == "uk" {
+                        if localization.isUkrainian {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(Color(hex: "a78bfa"))
                         }
                     }
                     .padding(12)
-                    .background(selectedLanguage == "uk" ? Color(hex: "a78bfa").opacity(0.2) : Color.white.opacity(0.04))
+                    .background(localization.isUkrainian ? Color(hex: "a78bfa").opacity(0.2) : Color.white.opacity(0.04))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(selectedLanguage == "uk" ? Color(hex: "a78bfa") : Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(localization.isUkrainian ? Color(hex: "a78bfa") : Color.white.opacity(0.08), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -349,7 +323,7 @@ struct UserProfileSheet: View {
     // MARK: - Server Selector
     private var serverSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("API Server Target", systemImage: "network")
+            Label(L10n.Profile.apiServerTarget, systemImage: "network")
                 .font(.subheadline.bold())
                 .foregroundColor(Color.white.opacity(0.7))
 
@@ -360,7 +334,7 @@ struct UserProfileSheet: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "laptopcomputer")
-                        Text("Localhost (:5237)")
+                        Text(L10n.Profile.localhost)
                     }
                     .font(.caption.weight(.bold))
                     .foregroundColor(AppConfig.baseURL == AppConfig.localBaseURL ? .white : Color.white.opacity(0.6))
@@ -379,7 +353,7 @@ struct UserProfileSheet: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "cloud.fill")
-                        Text("Cloud API")
+                        Text(L10n.Profile.cloudApi)
                     }
                     .font(.caption.weight(.bold))
                     .foregroundColor(AppConfig.baseURL == AppConfig.remoteBaseURL ? .white : Color.white.opacity(0.6))
@@ -419,7 +393,7 @@ struct UserProfileSheet: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 16, weight: .bold))
                     }
-                    Text(isSaving ? "Saving Changes..." : "Save Changes")
+                    Text(isSaving ? L10n.Profile.savingChanges : L10n.Profile.saveChanges)
                         .font(.headline.bold())
                 }
                 .foregroundColor(.white)
@@ -447,7 +421,7 @@ struct UserProfileSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                     .font(.system(size: 16, weight: .bold))
-                Text("Log Out")
+                Text(L10n.Profile.logOut)
                     .font(.headline.bold())
             }
             .foregroundColor(.white)

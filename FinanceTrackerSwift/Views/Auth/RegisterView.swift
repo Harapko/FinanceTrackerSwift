@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RegisterView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(LocalizationManager.self) private var localization
     @Environment(\.dismiss) private var dismiss
 
     @State private var firstName = ""
@@ -28,7 +29,7 @@ struct RegisterView: View {
                             .font(.system(size: 48))
                             .foregroundStyle(LinearGradient(colors: [Color(hex: "a78bfa"), Color(hex: "818cf8")],
                                                            startPoint: .topLeading, endPoint: .bottomTrailing))
-                        Text("Create Account")
+                        Text(L10n.Auth.createAccount)
                             .font(.title.bold())
                             .foregroundColor(.white)
                     }
@@ -36,17 +37,17 @@ struct RegisterView: View {
 
                     VStack(spacing: 16) {
                         HStack(spacing: 12) {
-                            authField("First Name", text: $firstName, icon: "person")
-                            authField("Last Name", text: $lastName, icon: "person")
+                            authField(L10n.Auth.firstName, text: $firstName, icon: "person")
+                            authField(L10n.Auth.lastName, text: $lastName, icon: "person")
                         }
-                        authField("Email", text: $email, icon: "envelope")
-                        authField("Password", text: $password, icon: "lock", isSecure: true)
+                        authField(L10n.Auth.email, text: $email, icon: "envelope")
+                        authField(L10n.Auth.password, text: $password, icon: "lock", isSecure: true)
 
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Default Currency", systemImage: "dollarsign.circle")
+                            Label(L10n.Auth.defaultCurrency, systemImage: "dollarsign.circle")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.7))
-                            Picker("Currency", selection: $currency) {
+                            Picker(L10n.Common.currency, selection: $currency) {
                                 ForEach(currencies, id: \.self) { c in
                                     Text(c).tag(c)
                                 }
@@ -79,7 +80,7 @@ struct RegisterView: View {
                                 if auth.isLoading {
                                     ProgressView().tint(.white)
                                 } else {
-                                    Text("Create Account").font(.headline).foregroundColor(.white)
+                                    Text(L10n.Auth.createAccount).font(.headline).foregroundColor(.white)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -90,7 +91,7 @@ struct RegisterView: View {
                         }
                         .disabled(auth.isLoading || firstName.isEmpty || email.isEmpty || password.isEmpty)
 
-                        Button("Already have an account? **Sign In**") { dismiss() }
+                        Button(LocalizedStringKey(L10n.Auth.alreadyHaveAccount)) { dismiss() }
                             .font(.subheadline)
                             .foregroundColor(Color.white.opacity(0.7))
                     }

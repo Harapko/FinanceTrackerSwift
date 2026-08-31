@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		L10N0001C8164D018EA79BCC /* Core/Localization/LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = L10N0002C8164D018EA79BCC /* Core/Localization/LocalizationManager.swift */; };
 		0714FA911862464EADEC5B26 /* Services/SavingsGoalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A990233F054A41800E2452 /* Services/SavingsGoalService.swift */; };
 		0B54CA26E76248B3A8275353 /* Views/Dashboard/RecentTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE67DBD5CB4AE3B39D874B /* Views/Dashboard/RecentTransactionsView.swift */; };
 		0C033A5FFD3840519A39F51B /* Views/Accounts/AddAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333376E4447E4399952EF9D0 /* Views/Accounts/AddAssetView.swift */; };
@@ -52,6 +53,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		L10N0002C8164D018EA79BCC /* Core/Localization/LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Localization/LocalizationManager.swift; sourceTree = "<group>"; };
 		01DA0FD668994D8BBEED3C97 /* Views/Accounts/AccountCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Accounts/AccountCardView.swift; sourceTree = "<group>"; };
 		04CBFDA675394A30AF991BEB /* Views/Transactions/AddTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Transactions/AddTransactionView.swift; sourceTree = "<group>"; };
 		1C6F81A4357B419BA3173365 /* Views/Accounts/AddAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Accounts/AddAccountView.swift; sourceTree = "<group>"; };
@@ -131,6 +133,7 @@
 				226E651CD48B47A196F55A90 /* App/ContentView.swift */,
 				A2EDC5A3F61E4A928CA357AE /* App/FinanceTrackerSwiftApp.swift */,
 				3DC49DE0592E4833AAB435C6 /* Core/Auth/AuthManager.swift */,
+				L10N0002C8164D018EA79BCC /* Core/Localization/LocalizationManager.swift */,
 				F7D4683FC13F4F8E90C890B7 /* Core/Auth/KeychainHelper.swift */,
 				29A746E8153145EAB58DE2A6 /* Core/Extensions/Color+Hex.swift */,
 				CDD6D8DA549646F9B9D2348B /* Core/Network/APIClient.swift */,
@@ -253,6 +256,7 @@
 				8076E014F53349DCB6E2E8A0 /* App/ContentView.swift in Sources */,
 				E364BA80D0704E8AA95EE107 /* App/FinanceTrackerSwiftApp.swift in Sources */,
 				AF036AD843B24A8FBE74AFCF /* Core/Auth/AuthManager.swift in Sources */,
+				L10N0001C8164D018EA79BCC /* Core/Localization/LocalizationManager.swift in Sources */,
 				A0301E82B1294B85A962BC42 /* Core/Auth/KeychainHelper.swift in Sources */,
 				D3ABCED4BE4A4147A6518080 /* Core/Extensions/Color+Hex.swift in Sources */,
 				6F176722309A494C850BA5F0 /* Core/Network/APIClient.swift in Sources */,

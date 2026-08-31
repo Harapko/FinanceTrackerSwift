@@ -22,6 +22,7 @@ extension EnvironmentValues {
 
 struct ContentView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(LocalizationManager.self) private var localization
     @State private var selectedTab: AppTab = .dashboard
 
     var body: some View {
@@ -39,6 +40,7 @@ struct ContentView: View {
 
 // MARK: - Main Navigation
 struct MainTabView: View {
+    @Environment(LocalizationManager.self) private var localization
     @Binding var selectedTab: AppTab
 
     var body: some View {
@@ -56,7 +58,7 @@ struct MainTabView: View {
                 DashboardView()
             }
             .tabItem {
-                Label("Dashboard", systemImage: "chart.bar.fill")
+                Label(L10n.Nav.dashboard, systemImage: "chart.bar.fill")
             }
             .tag(AppTab.dashboard)
 
@@ -64,7 +66,7 @@ struct MainTabView: View {
                 TransactionsView()
             }
             .tabItem {
-                Label("Transactions", systemImage: "arrow.left.arrow.right")
+                Label(L10n.Nav.transactions, systemImage: "arrow.left.arrow.right")
             }
             .tag(AppTab.transactions)
 
@@ -72,7 +74,7 @@ struct MainTabView: View {
                 AccountsView()
             }
             .tabItem {
-                Label("Accounts", systemImage: "building.columns")
+                Label(L10n.Nav.accounts, systemImage: "building.columns")
             }
             .tag(AppTab.accounts)
 
@@ -80,7 +82,7 @@ struct MainTabView: View {
                 AnalyticsView()
             }
             .tabItem {
-                Label("Analytics", systemImage: "chart.pie")
+                Label(L10n.Nav.analytics, systemImage: "chart.pie")
             }
             .tag(AppTab.analytics)
 
@@ -88,7 +90,7 @@ struct MainTabView: View {
                 SavingsView()
             }
             .tabItem {
-                Label("Savings", systemImage: "target")
+                Label(L10n.Nav.savings, systemImage: "target")
             }
             .tag(AppTab.savings)
         }
@@ -124,14 +126,27 @@ struct MainTabView: View {
 // MARK: - macOS Sidebar
 struct SidebarView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(LocalizationManager.self) private var localization
     @Binding var selectedTab: AppTab
 
-    enum SidebarItem: String, CaseIterable {
-        case dashboard = "Dashboard"
-        case transactions = "Transactions"
-        case accounts = "Accounts"
-        case analytics = "Analytics"
-        case savings = "Savings"
+    enum SidebarItem: Int, CaseIterable, Identifiable {
+        case dashboard = 0
+        case transactions = 1
+        case accounts = 2
+        case analytics = 3
+        case savings = 4
+
+        var id: Int { rawValue }
+
+        var title: String {
+            switch self {
+            case .dashboard: return L10n.Nav.dashboard
+            case .transactions: return L10n.Nav.transactions
+            case .accounts: return L10n.Nav.accounts
+            case .analytics: return L10n.Nav.analytics
+            case .savings: return L10n.Nav.savings
+            }
+        }
 
         var tab: AppTab {
             switch self {
@@ -173,8 +188,8 @@ struct SidebarView: View {
                     .foregroundStyle(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
                                                    startPoint: .topLeading, endPoint: .bottomTrailing))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Finance").font(.headline.bold())
-                    Text("Tracker").font(.caption).opacity(0.6)
+                    Text(L10n.Nav.appTitle).font(.headline.bold())
+                    Text(L10n.Nav.appSubtitle).font(.caption).opacity(0.6)
                 }
             }
             .padding(.horizontal, 16)
@@ -182,14 +197,14 @@ struct SidebarView: View {
 
             Divider().opacity(0.2)
 
-            List(SidebarItem.allCases, id: \.self) { item in
+            List(SidebarItem.allCases) { item in
                 Button {
                     selectedTab = item.tab
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: item.icon)
                             .foregroundColor(item.color)
-                        Text(item.rawValue)
+                        Text(item.title)
                             .foregroundColor(.primary)
                     }
                 }

@@ -78,10 +78,10 @@ struct SavingsView: View {
                 // Header
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Savings Goals")
+                        Text(L10n.Savings.title)
                             .font(.largeTitle.bold())
                             .foregroundColor(.white)
-                        Text("\(viewModel.goals.count) goals • Saved: \(viewModel.totalSaved.formatted(currencyCode: "USD"))")
+                        Text(L10n.Savings.goalsSummary(count: viewModel.goals.count, totalSaved: viewModel.totalSaved.formatted(currencyCode: "USD")))
                             .font(.caption)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
@@ -94,7 +94,7 @@ struct SavingsView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "plus")
                                 .font(.caption.bold())
-                            Text("New Goal")
+                            Text(L10n.Savings.newGoal)
                                 .font(.caption.weight(.semibold))
                         }
                         .foregroundColor(.white)
@@ -125,7 +125,7 @@ struct SavingsView: View {
                 if !viewModel.goals.isEmpty && viewModel.totalTarget > 0 {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("Total Savings Progress")
+                            Text(L10n.Savings.totalSavingsProgress)
                                 .font(.caption.weight(.bold))
                                 .foregroundColor(Color.white.opacity(0.6))
                             Spacer()
@@ -154,7 +154,7 @@ struct SavingsView: View {
                                 .font(.caption2.bold())
                                 .foregroundColor(.white)
                             Spacer()
-                            Text("Target: \(viewModel.totalTarget.formatted(currencyCode: "USD"))")
+                            Text("\(L10n.Savings.target): \(viewModel.totalTarget.formatted(currencyCode: "USD"))")
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.5))
                         }
@@ -172,10 +172,10 @@ struct SavingsView: View {
                         Image(systemName: "target")
                             .font(.system(size: 48))
                             .foregroundColor(Color.white.opacity(0.2))
-                        Text("No savings goals yet")
+                        Text(L10n.Savings.emptyTitle)
                             .font(.headline)
                             .foregroundColor(Color.white.opacity(0.4))
-                        Button("Create Your First Goal") {
+                        Button(L10n.Savings.createFirstGoal) {
                             activeSheet = .addGoal
                         }
                         .foregroundColor(Color(hex: "a78bfa"))
@@ -233,19 +233,19 @@ struct SavingsView: View {
             }
         }
         .confirmationDialog(
-            "Delete Goal",
+            L10n.Savings.deleteGoal,
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete Goal", role: .destructive) {
+            Button(L10n.Savings.deleteGoal, role: .destructive) {
                 if let g = goalToDelete {
                     Task { await viewModel.delete(id: g.id) }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
             if let g = goalToDelete {
-                Text("Are you sure you want to delete '\(g.name)'?")
+                Text(L10n.Savings.deleteConfirmMsg(name: g.name))
             }
         }
         .task {

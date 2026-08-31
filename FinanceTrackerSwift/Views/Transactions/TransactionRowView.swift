@@ -27,7 +27,7 @@ struct TransactionRowView: View {
         if let category = transaction.categoryName, !category.trimmingCharacters(in: .whitespaces).isEmpty {
             return category
         }
-        return transaction.description?.isEmpty == false ? (transaction.description ?? "Transaction") : "Transaction"
+        return transaction.description?.isEmpty == false ? (transaction.description ?? L10n.Nav.transactions) : L10n.Nav.transactions
     }
 
     var secondaryDetails: String {
@@ -99,7 +99,7 @@ struct TransactionRowView: View {
                     Button(role: .destructive) {
                         onDelete()
                     } label: {
-                        Label("Delete Transaction", systemImage: "trash")
+                        Label(L10n.Transactions.deleteTransaction, systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -116,7 +116,7 @@ struct TransactionRowView: View {
                 Button(role: .destructive) {
                     onDelete()
                 } label: {
-                    Label("Delete Transaction", systemImage: "trash")
+                    Label(L10n.Transactions.deleteTransaction, systemImage: "trash")
                 }
             }
         }

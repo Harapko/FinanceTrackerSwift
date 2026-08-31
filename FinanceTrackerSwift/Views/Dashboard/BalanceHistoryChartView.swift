@@ -19,7 +19,7 @@ struct BalanceHistoryChartView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Balance History")
+                    Text(L10n.Dashboard.balanceHistory)
                         .font(.headline.bold())
                         .foregroundColor(.white)
                     if let selectedEntry {
@@ -27,7 +27,7 @@ struct BalanceHistoryChartView: View {
                             .font(.caption)
                             .foregroundColor(Color(hex: "a78bfa"))
                     } else if let latest = entries.last {
-                        Text("Current: \(latest.balance.formatted(currencyCode: currencyCode))")
+                        Text("\(L10n.Dashboard.current): \(latest.balance.formatted(currencyCode: currencyCode))")
                             .font(.caption)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
@@ -40,7 +40,7 @@ struct BalanceHistoryChartView: View {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 32))
                         .foregroundColor(Color.white.opacity(0.2))
-                    Text("No balance history")
+                    Text(L10n.Dashboard.noBalanceHistory)
                         .font(.subheadline)
                         .foregroundColor(Color.white.opacity(0.4))
                 }
@@ -137,6 +137,7 @@ struct BalanceHistoryChartView: View {
 
     private func formatDateFull(_ date: Date) -> String {
         let formatter = DateFormatter()
+        formatter.locale = LocalizationManager.shared.currentLocale
         formatter.dateFormat = "MMM d, yyyy"
         return formatter.string(from: date)
     }

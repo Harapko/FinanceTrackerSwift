@@ -20,12 +20,12 @@ struct ExpenseCategoryChartView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Header
             HStack {
-                Text("Expenses by Category")
+                Text(L10n.Dashboard.expensesByCategory)
                     .font(.headline.bold())
                     .foregroundColor(.white)
                 Spacer()
                 if totalAmount > 0 {
-                    Text("Total: \(totalAmount.formatted(currencyCode: currencyCode))")
+                    Text("\(L10n.Dashboard.total): \(totalAmount.formatted(currencyCode: currencyCode))")
                         .font(.caption)
                         .foregroundColor(Color.white.opacity(0.5))
                 }
@@ -36,7 +36,7 @@ struct ExpenseCategoryChartView: View {
                     Image(systemName: "chart.pie")
                         .font(.system(size: 32))
                         .foregroundColor(Color.white.opacity(0.2))
-                    Text("No expenses this period")
+                    Text(L10n.Dashboard.noExpenses)
                         .font(.subheadline)
                         .foregroundColor(Color.white.opacity(0.4))
                 }

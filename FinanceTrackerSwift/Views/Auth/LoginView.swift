@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(LocalizationManager.self) private var localization
     @State private var email = ""
     @State private var password = ""
     @State private var showRegister = false
@@ -25,10 +26,10 @@ struct LoginView: View {
                             LinearGradient(colors: [Color(hex: "a78bfa"), Color(hex: "818cf8")],
                                            startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
-                    Text("Finance Tracker")
+                    Text(L10n.Nav.appTitle + " " + L10n.Nav.appSubtitle)
                         .font(.largeTitle.bold())
                         .foregroundColor(.white)
-                    Text("Track your financial future")
+                    Text(L10n.Auth.tagline)
                         .font(.subheadline)
                         .foregroundColor(Color.white.opacity(0.6))
                 }
@@ -37,7 +38,7 @@ struct LoginView: View {
                 // Form card
                 VStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Email", systemImage: "envelope")
+                        Label(L10n.Auth.email, systemImage: "envelope")
                             .font(.caption.weight(.semibold))
                             .foregroundColor(Color.white.opacity(0.7))
                         TextField("you@example.com", text: $email)
@@ -54,7 +55,7 @@ struct LoginView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Password", systemImage: "lock")
+                        Label(L10n.Auth.password, systemImage: "lock")
                             .font(.caption.weight(.semibold))
                             .foregroundColor(Color.white.opacity(0.7))
                         SecureField("••••••••", text: $password)
@@ -84,7 +85,7 @@ struct LoginView: View {
                             if auth.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Text("Sign In")
+                                Text(L10n.Auth.signIn)
                                     .font(.headline)
                                     .foregroundColor(.white)
                             }
@@ -102,7 +103,7 @@ struct LoginView: View {
                     Button {
                         showRegister = true
                     } label: {
-                        Text("Don't have an account? **Register**")
+                        Text(LocalizedStringKey(L10n.Auth.dontHaveAccount))
                             .font(.subheadline)
                             .foregroundColor(Color.white.opacity(0.7))
                     }
@@ -120,6 +121,7 @@ struct LoginView: View {
         .sheet(isPresented: $showRegister) {
             RegisterView()
                 .environment(auth)
+                .environment(localization)
         }
     }
 }

@@ -7,9 +7,9 @@ enum TransactionType: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .expense: return "Expense"
-        case .income: return "Income"
-        case .transfer: return "Transfer"
+        case .expense: return L10n.Transactions.typeExpense
+        case .income: return L10n.Transactions.typeIncome
+        case .transfer: return L10n.Transactions.typeTransfer
         }
     }
 
@@ -259,6 +259,16 @@ enum TransactionPeriodMode: String, CaseIterable, Identifiable {
     case period = "Period"
 
     var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .day: return L10n.Transactions.day
+        case .week: return L10n.Transactions.week
+        case .month: return L10n.Transactions.month
+        case .year: return L10n.Transactions.year
+        case .period: return L10n.Transactions.period
+        }
+    }
 }
 
 struct TransactionDateGroup: Identifiable {

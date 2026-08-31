@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Category Icon Model for Swift UI Picker
+// MARK: - Category Icon Model
 struct CategoryIconItem: Identifiable, Hashable {
     let id: String
     let name: String
@@ -16,126 +16,112 @@ struct AddCategoryView: View {
 
     @State private var name: String = ""
     @State private var type: CategoryTypeOption = .expense
-    @State private var selectedIcon: String = "ShoppingBag"
-    @State private var selectedColorHex: String = "818cf8"
-    @State private var customColor: Color = Color(hex: "818cf8")
-    @State private var hexInput: String = "818cf8"
+    @State private var selectedIcon: String = "tag.fill"
+    @State private var selectedColorHex: String = "ef4444"
+    @State private var hexInput: String = "ef4444"
+    @State private var customColor: Color = Color(hex: "ef4444")
     @State private var searchText: String = ""
     @State private var selectedCategoryFilter: String = "all"
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
 
-    // 20 Preset Curated Modern Colors
+    // Color swatches (16 vibrant colors)
     let colorOptions: [String] = [
-        "f43f5e", // Rose
-        "ef4444", // Red
-        "f97316", // Orange
-        "f59e0b", // Amber
-        "eab308", // Yellow
-        "84cc16", // Lime
-        "10b981", // Emerald
-        "14b8a6", // Teal
-        "06b6d4", // Cyan
-        "0ea5e9", // Sky
-        "3b82f6", // Blue
-        "6366f1", // Indigo
-        "8b5cf6", // Violet
-        "a855f7", // Purple
-        "d946ef", // Fuchsia
-        "ec4899", // Pink
-        "f472b6", // Light Pink
-        "64748b", // Slate
-        "78716c", // Stone
-        "71717a"  // Zinc
+        "ef4444", "f97316", "f59e0b", "eab308",
+        "84cc16", "22c55e", "10b981", "14b8a6",
+        "06b6d4", "38bdf8", "3b82f6", "6366f1",
+        "8b5cf6", "a855f7", "ec4899", "64748b"
     ]
 
-    let filterCategories: [(id: String, title: String)] = [
-        ("all", "All"),
-        ("food", "Food"),
-        ("shopping", "Shopping"),
-        ("transport", "Transport"),
-        ("housing", "Housing"),
-        ("health", "Health"),
-        ("fun", "Fun"),
-        ("work", "Work"),
-        ("finance", "Finance"),
-        ("life", "Life"),
-        ("tools", "Tools")
-    ]
+    var filterCategories: [(id: String, title: String)] {
+        [
+            ("all", L10n.Categories.filterAll),
+            ("food", L10n.Categories.filterFood),
+            ("shopping", L10n.Categories.filterShopping),
+            ("transport", L10n.Categories.filterTransport),
+            ("housing", L10n.Categories.filterHousing),
+            ("health", L10n.Categories.filterHealth),
+            ("fun", L10n.Categories.filterEntertainment),
+            ("work", L10n.Categories.filterWork),
+            ("finance", L10n.Categories.filterFinance),
+            ("life", L10n.Categories.filterLife),
+            ("tools", L10n.Categories.filterTools)
+        ]
+    }
 
     let allIcons: [CategoryIconItem] = [
         // Food & Dining
-        CategoryIconItem(id: "Utensils", name: "Utensils", symbol: "fork.knife", category: "food", keywords: ["food", "dining", "restaurant", "meal", "lunch", "dinner"]),
-        CategoryIconItem(id: "UtensilsCrossed", name: "Cutlery", symbol: "fork.knife.circle.fill", category: "food", keywords: ["restaurant", "cutlery", "food", "eating"]),
-        CategoryIconItem(id: "Coffee", name: "Coffee", symbol: "cup.and.saucer.fill", category: "food", keywords: ["coffee", "cafe", "tea", "drink", "beverage", "starbucks"]),
-        CategoryIconItem(id: "Pizza", name: "Pizza", symbol: "takeoutbag.and.cup.and.straw.fill", category: "food", keywords: ["pizza", "fastfood", "junk food", "takeout", "delivery"]),
-        CategoryIconItem(id: "Beer", name: "Beer", symbol: "mug.fill", category: "food", keywords: ["beer", "bar", "alcohol", "pub", "party"]),
-        CategoryIconItem(id: "Wine", name: "Wine", symbol: "wineglass.fill", category: "food", keywords: ["wine", "drink", "alcohol", "bar", "celebration"]),
-        CategoryIconItem(id: "Apple", name: "Apple", symbol: "apple.logo", category: "food", keywords: ["apple", "fruit", "healthy", "groceries", "snack"]),
-        CategoryIconItem(id: "Cake", name: "Cake", symbol: "birthday.cake.fill", category: "food", keywords: ["cake", "dessert", "bakery", "birthday", "sweet"]),
-        CategoryIconItem(id: "Cookie", name: "Cookie", symbol: "circle.hexagongrid.fill", category: "food", keywords: ["cookie", "biscuit", "snack", "sweet"]),
-        CategoryIconItem(id: "Fish", name: "Fish", symbol: "fish.fill", category: "food", keywords: ["fish", "seafood", "food", "meat"]),
-        CategoryIconItem(id: "Soup", name: "Soup", symbol: "cup.and.saucer.fill", category: "food", keywords: ["soup", "warm food", "ramen", "noodles", "lunch"]),
+        CategoryIconItem(id: "Utensils", name: "Restaurant", symbol: "fork.knife", category: "food", keywords: ["food", "restaurant", "dining", "meal", "dinner", "lunch"]),
+        CategoryIconItem(id: "UtensilsCrossed", name: "Dining Out", symbol: "fork.knife.circle.fill", category: "food", keywords: ["food", "restaurant", "cafe", "eat"]),
+        CategoryIconItem(id: "Coffee", name: "Coffee & Tea", symbol: "cup.and.saucer.fill", category: "food", keywords: ["coffee", "tea", "cafe", "latte", "espresso", "starbucks", "drink"]),
+        CategoryIconItem(id: "Pizza", name: "Fast Food", symbol: "takeoutbag.and.cup.and.straw.fill", category: "food", keywords: ["fast food", "pizza", "burger", "takeout", "delivery"]),
+        CategoryIconItem(id: "Beer", name: "Beer & Drinks", symbol: "mug.fill", category: "food", keywords: ["beer", "alcohol", "bar", "pub", "brewery", "drink"]),
+        CategoryIconItem(id: "Wine", name: "Wine & Spirits", symbol: "wineglass.fill", category: "food", keywords: ["wine", "alcohol", "bar", "cocktail", "liquor"]),
+        CategoryIconItem(id: "Apple", name: "Groceries", symbol: "apple.logo", category: "food", keywords: ["fruit", "apple", "food", "healthy", "snack"]),
+        CategoryIconItem(id: "Cake", name: "Bakery", symbol: "birthday.cake.fill", category: "food", keywords: ["cake", "dessert", "bakery", "pastry", "sweet", "birthday"]),
+        CategoryIconItem(id: "Cookie", name: "Snacks", symbol: "circle.hexagongrid.fill", category: "food", keywords: ["cookie", "snack", "sweets", "candy"]),
+        CategoryIconItem(id: "Fish", name: "Seafood", symbol: "fish.fill", category: "food", keywords: ["fish", "seafood", "sushi", "salmon", "market"]),
+        CategoryIconItem(id: "Soup", name: "Soup & Bowls", symbol: "cup.and.saucer.fill", category: "food", keywords: ["soup", "bowl", "ramen", "noodle", "warm"]),
 
         // Shopping & Retail
-        CategoryIconItem(id: "ShoppingBag", name: "Shopping Bag", symbol: "bag.fill", category: "shopping", keywords: ["shopping", "bag", "clothes", "store", "mall", "retail"]),
-        CategoryIconItem(id: "ShoppingCart", name: "Cart", symbol: "cart.fill", category: "shopping", keywords: ["cart", "groceries", "supermarket", "market", "buy"]),
-        CategoryIconItem(id: "Store", name: "Store", symbol: "storefront.fill", category: "shopping", keywords: ["store", "shop", "market", "boutique", "retail"]),
-        CategoryIconItem(id: "Tag", name: "Tag", symbol: "tag.fill", category: "shopping", keywords: ["tag", "discount", "sale", "label", "price"]),
-        CategoryIconItem(id: "Gift", name: "Gift", symbol: "gift.fill", category: "shopping", keywords: ["gift", "present", "birthday", "holiday", "donation"]),
-        CategoryIconItem(id: "Package", name: "Package", symbol: "shippingbox.fill", category: "shopping", keywords: ["package", "parcel", "delivery", "amazon", "shipping", "box"]),
-        CategoryIconItem(id: "Shirt", name: "Clothing", symbol: "tshirt.fill", category: "shopping", keywords: ["shirt", "clothing", "apparel", "fashion", "clothes", "wear"]),
-        CategoryIconItem(id: "Watch", name: "Watch", symbol: "applewatch", category: "shopping", keywords: ["watch", "accessory", "jewelry", "clock", "time"]),
-        CategoryIconItem(id: "Glasses", name: "Glasses", symbol: "eyeglasses", category: "shopping", keywords: ["glasses", "optics", "sunglasses", "vision", "eyewear"]),
-        CategoryIconItem(id: "Footprints", name: "Shoes", symbol: "shoeprints.fill", category: "shopping", keywords: ["shoes", "footwear", "boots", "sneakers", "steps"]),
-        CategoryIconItem(id: "CreditCard", name: "Credit Card", symbol: "creditcard.fill", category: "shopping", keywords: ["card", "payment", "credit", "debit", "subscription"]),
+        CategoryIconItem(id: "ShoppingBag", name: "Shopping", symbol: "bag.fill", category: "shopping", keywords: ["shopping", "bag", "clothes", "mall", "purchase"]),
+        CategoryIconItem(id: "ShoppingCart", name: "Supermarket", symbol: "cart.fill", category: "shopping", keywords: ["cart", "supermarket", "groceries", "store", "market"]),
+        CategoryIconItem(id: "Store", name: "Department Store", symbol: "storefront.fill", category: "shopping", keywords: ["store", "shop", "market", "retail", "mall"]),
+        CategoryIconItem(id: "Tag", name: "Discounts & Sales", symbol: "tag.fill", category: "shopping", keywords: ["tag", "sale", "discount", "offer", "deal", "promo"]),
+        CategoryIconItem(id: "Gift", name: "Gifts & Donations", symbol: "gift.fill", category: "shopping", keywords: ["gift", "present", "donation", "charity", "holiday", "birthday"]),
+        CategoryIconItem(id: "Package", name: "Online Orders", symbol: "shippingbox.fill", category: "shopping", keywords: ["package", "delivery", "amazon", "courier", "shipping"]),
+        CategoryIconItem(id: "Shirt", name: "Clothing", symbol: "tshirt.fill", category: "shopping", keywords: ["clothing", "shirt", "clothes", "apparel", "fashion"]),
+        CategoryIconItem(id: "Watch", name: "Jewelry & Luxury", symbol: "applewatch", category: "shopping", keywords: ["watch", "jewelry", "accessory", "luxury", "gold"]),
+        CategoryIconItem(id: "Glasses", name: "Optics & Style", symbol: "eyeglasses", category: "shopping", keywords: ["glasses", "optics", "sunglasses", "vision"]),
+        CategoryIconItem(id: "Footprints", name: "Shoes", symbol: "shoeprints.fill", category: "shopping", keywords: ["shoes", "boots", "sneakers", "footwear"]),
+        CategoryIconItem(id: "CreditCard", name: "Subscriptions", symbol: "creditcard.fill", category: "shopping", keywords: ["card", "payment", "bank", "subscription", "recurring"]),
 
         // Transport & Travel
-        CategoryIconItem(id: "Car", name: "Car", symbol: "car.fill", category: "transport", keywords: ["car", "vehicle", "auto", "drive", "parking", "uber", "taxi"]),
-        CategoryIconItem(id: "Fuel", name: "Fuel", symbol: "fuelpump.fill", category: "transport", keywords: ["fuel", "gas", "gasoline", "petrol", "diesel", "charge"]),
-        CategoryIconItem(id: "Bus", name: "Bus", symbol: "bus.fill", category: "transport", keywords: ["bus", "public transport", "transit", "commute"]),
-        CategoryIconItem(id: "Plane", name: "Flight", symbol: "airplane", category: "transport", keywords: ["plane", "flight", "travel", "trip", "vacation", "airline"]),
-        CategoryIconItem(id: "Train", name: "Train", symbol: "tram.fill", category: "transport", keywords: ["train", "rail", "metro", "subway", "transit"]),
-        CategoryIconItem(id: "Bike", name: "Bicycle", symbol: "bicycle", category: "transport", keywords: ["bike", "bicycle", "cycling", "ride"]),
-        CategoryIconItem(id: "Ship", name: "Ship", symbol: "ferry.fill", category: "transport", keywords: ["ship", "boat", "ferry", "cruise", "sea"]),
-        CategoryIconItem(id: "MapPin", name: "Location", symbol: "mappin.and.ellipse", category: "transport", keywords: ["location", "place", "travel", "pin", "gps"]),
-        CategoryIconItem(id: "Navigation", name: "Navigation", symbol: "location.fill", category: "transport", keywords: ["navigation", "gps", "direction", "travel", "maps"]),
-        CategoryIconItem(id: "Luggage", name: "Luggage", symbol: "suitcase.fill", category: "transport", keywords: ["luggage", "baggage", "travel", "suitcase", "trip"]),
-        CategoryIconItem(id: "Ticket", name: "Ticket", symbol: "ticket.fill", category: "transport", keywords: ["ticket", "event", "concert", "cinema", "transport", "pass"]),
-        CategoryIconItem(id: "Compass", name: "Compass", symbol: "safari.fill", category: "transport", keywords: ["compass", "explore", "adventure", "travel", "direction"]),
+        CategoryIconItem(id: "Car", name: "Auto & Vehicle", symbol: "car.fill", category: "transport", keywords: ["car", "auto", "vehicle", "drive", "parking"]),
+        CategoryIconItem(id: "Fuel", name: "Gas & Fuel", symbol: "fuelpump.fill", category: "transport", keywords: ["fuel", "gas", "petrol", "diesel", "station"]),
+        CategoryIconItem(id: "Bus", name: "Public Transit", symbol: "bus.fill", category: "transport", keywords: ["bus", "transit", "metro", "subway", "ticket", "public"]),
+        CategoryIconItem(id: "Plane", name: "Flights & Travel", symbol: "airplane", category: "transport", keywords: ["airplane", "flight", "travel", "vacation", "trip", "airline"]),
+        CategoryIconItem(id: "Train", name: "Train & Rail", symbol: "tram.fill", category: "transport", keywords: ["train", "rail", "metro", "commute"]),
+        CategoryIconItem(id: "Bike", name: "Bicycle", symbol: "bicycle", category: "transport", keywords: ["bike", "cycling", "bicycle", "scooter", "eco"]),
+        CategoryIconItem(id: "Ship", name: "Cruise & Ferry", symbol: "ferry.fill", category: "transport", keywords: ["boat", "ship", "ferry", "cruise", "sea", "water"]),
+        CategoryIconItem(id: "MapPin", name: "Taxi & Rides", symbol: "mappin.and.ellipse", category: "transport", keywords: ["taxi", "uber", "bolt", "lyft", "ride", "cab"]),
+        CategoryIconItem(id: "Navigation", name: "Navigation", symbol: "location.fill", category: "transport", keywords: ["gps", "map", "location", "toll", "highway"]),
+        CategoryIconItem(id: "Luggage", name: "Vacation", symbol: "suitcase.fill", category: "transport", keywords: ["luggage", "vacation", "holiday", "hotel", "resort"]),
+        CategoryIconItem(id: "Ticket", name: "Tickets", symbol: "ticket.fill", category: "transport", keywords: ["ticket", "entry", "pass", "booking", "event"]),
+        CategoryIconItem(id: "Compass", name: "Adventures", symbol: "safari.fill", category: "transport", keywords: ["compass", "safari", "explore", "tour", "guide"]),
 
-        // Housing & Living
-        CategoryIconItem(id: "Home", name: "Home", symbol: "house.fill", category: "housing", keywords: ["home", "house", "rent", "mortgage", "apartment", "property"]),
-        CategoryIconItem(id: "Building", name: "Building", symbol: "building.fill", category: "housing", keywords: ["building", "office", "flat", "apartment", "condo"]),
-        CategoryIconItem(id: "Building2", name: "Real Estate", symbol: "building.2.fill", category: "housing", keywords: ["building", "city", "real estate", "hotel"]),
-        CategoryIconItem(id: "Zap", name: "Electricity", symbol: "bolt.fill", category: "housing", keywords: ["electricity", "power", "energy", "utility", "electric", "bill"]),
-        CategoryIconItem(id: "Droplets", name: "Water", symbol: "drop.fill", category: "housing", keywords: ["water", "utilities", "droplet", "plumbing", "bill"]),
-        CategoryIconItem(id: "Flame", name: "Heating / Gas", symbol: "flame.fill", category: "housing", keywords: ["gas", "heating", "fire", "utilities", "warmth"]),
-        CategoryIconItem(id: "Wifi", name: "Internet", symbol: "wifi", category: "housing", keywords: ["wifi", "internet", "broadband", "network", "provider"]),
-        CategoryIconItem(id: "Tv", name: "TV", symbol: "tv.fill", category: "housing", keywords: ["tv", "television", "cable", "entertainment", "screen"]),
-        CategoryIconItem(id: "Trash2", name: "Waste", symbol: "trash.fill", category: "housing", keywords: ["trash", "waste", "garbage", "cleaning", "service"]),
-        CategoryIconItem(id: "Key", name: "Key", symbol: "key.fill", category: "housing", keywords: ["key", "rent", "lock", "access", "security", "home"]),
-        CategoryIconItem(id: "Lightbulb", name: "Lighting", symbol: "lightbulb.fill", category: "housing", keywords: ["light", "bulb", "idea", "electricity", "lamp"]),
-        CategoryIconItem(id: "Bed", name: "Furniture / Bed", symbol: "bed.double.fill", category: "housing", keywords: ["bed", "hotel", "accommodation", "sleep", "furniture"]),
-        CategoryIconItem(id: "Bath", name: "Bath / Hygiene", symbol: "shower.fill", category: "housing", keywords: ["bath", "bathroom", "hygiene", "hotel", "home"]),
+        // Housing & Utilities
+        CategoryIconItem(id: "Home", name: "Rent & Mortgage", symbol: "house.fill", category: "housing", keywords: ["home", "house", "rent", "mortgage", "apartment", "realty"]),
+        CategoryIconItem(id: "Building", name: "Property", symbol: "building.fill", category: "housing", keywords: ["building", "property", "hoa", "maintenance", "office"]),
+        CategoryIconItem(id: "Building2", name: "Commercial", symbol: "building.2.fill", category: "housing", keywords: ["city", "condo", "development", "architecture"]),
+        CategoryIconItem(id: "Zap", name: "Electricity", symbol: "bolt.fill", category: "housing", keywords: ["power", "electricity", "energy", "utility", "electric", "bill"]),
+        CategoryIconItem(id: "Droplets", name: "Water Supply", symbol: "drop.fill", category: "housing", keywords: ["water", "utility", "sewer", "plumbing", "bill"]),
+        CategoryIconItem(id: "Flame", name: "Heating & Gas", symbol: "flame.fill", category: "housing", keywords: ["gas", "heat", "heating", "fire", "winter", "utility"]),
+        CategoryIconItem(id: "Wifi", name: "Internet", symbol: "wifi", category: "housing", keywords: ["internet", "wifi", "broadband", "network", "fiber", "provider"]),
+        CategoryIconItem(id: "Tv", name: "Cable & Media", symbol: "tv.fill", category: "housing", keywords: ["tv", "cable", "television", "streaming", "netflix", "media"]),
+        CategoryIconItem(id: "Trash2", name: "Waste Management", symbol: "trash.fill", category: "housing", keywords: ["trash", "garbage", "cleaning", "recycling", "waste"]),
+        CategoryIconItem(id: "Key", name: "Security & Keys", symbol: "key.fill", category: "housing", keywords: ["key", "locksmith", "access", "safe"]),
+        CategoryIconItem(id: "Lightbulb", name: "Home Improvement", symbol: "lightbulb.fill", category: "housing", keywords: ["light", "bulb", "decor", "interior", "furniture", "ikea"]),
+        CategoryIconItem(id: "Bed", name: "Furniture", symbol: "bed.double.fill", category: "housing", keywords: ["bed", "furniture", "hotel", "bedroom", "rest"]),
+        CategoryIconItem(id: "Bath", name: "Bath & Clean", symbol: "shower.fill", category: "housing", keywords: ["bath", "shower", "cleaning", "hygiene", "soap"]),
 
         // Health & Fitness
-        CategoryIconItem(id: "Heart", name: "Health", symbol: "heart.fill", category: "health", keywords: ["heart", "love", "health", "wellness", "life", "donation"]),
-        CategoryIconItem(id: "HeartPulse", name: "Cardio", symbol: "heart.text.square.fill", category: "health", keywords: ["pulse", "cardio", "health", "medicine", "hospital"]),
-        CategoryIconItem(id: "Activity", name: "Activity", symbol: "waveform.path.ecg", category: "health", keywords: ["activity", "fitness", "tracking", "health", "sport"]),
-        CategoryIconItem(id: "Dumbbell", name: "Gym", symbol: "dumbbell.fill", category: "health", keywords: ["gym", "fitness", "workout", "exercise", "training", "sport"]),
-        CategoryIconItem(id: "Pill", name: "Pharmacy", symbol: "pills.fill", category: "health", keywords: ["pill", "pharmacy", "medicine", "drugs", "treatment", "doctor"]),
-        CategoryIconItem(id: "Stethoscope", name: "Doctor", symbol: "stethoscope", category: "health", keywords: ["doctor", "medical", "clinic", "hospital", "checkup"]),
-        CategoryIconItem(id: "Crosshair", name: "Target", symbol: "target", category: "health", keywords: ["target", "focus", "goal", "health"]),
-        CategoryIconItem(id: "Shield", name: "Insurance", symbol: "shield.fill", category: "health", keywords: ["insurance", "protection", "shield", "security", "safety"]),
-        CategoryIconItem(id: "Smile", name: "Wellness", symbol: "face.smiling.inverse", category: "health", keywords: ["smile", "happy", "mental health", "therapy", "beauty"]),
-        CategoryIconItem(id: "Hospital", name: "Hospital", symbol: "cross.case.fill", category: "health", keywords: ["hospital", "clinic", "emergency", "healthcare", "care"]),
+        CategoryIconItem(id: "Heart", name: "Healthcare", symbol: "heart.fill", category: "health", keywords: ["heart", "health", "care", "wellness", "doctor"]),
+        CategoryIconItem(id: "HeartPulse", name: "Medical Checkup", symbol: "heart.text.square.fill", category: "health", keywords: ["medical", "clinic", "hospital", "test", "doctor", "health"]),
+        CategoryIconItem(id: "Activity", name: "Fitness & Sport", symbol: "waveform.path.ecg", category: "health", keywords: ["fitness", "sports", "workout", "cardio", "training", "gym"]),
+        CategoryIconItem(id: "Dumbbell", name: "Gym Membership", symbol: "dumbbell.fill", category: "health", keywords: ["gym", "workout", "muscle", "crossfit", "training"]),
+        CategoryIconItem(id: "Pill", name: "Pharmacy", symbol: "pills.fill", category: "health", keywords: ["pharmacy", "medicine", "pill", "drugs", "vitamins", "prescription"]),
+        CategoryIconItem(id: "Stethoscope", name: "Doctor Visits", symbol: "stethoscope", category: "health", keywords: ["doctor", "physician", "consultation", "therapy", "specialist"]),
+        CategoryIconItem(id: "Crosshair", name: "Target Sport", symbol: "target", category: "health", keywords: ["target", "sport", "hobby", "focus", "archery"]),
+        CategoryIconItem(id: "Shield", name: "Health Insurance", symbol: "shield.fill", category: "health", keywords: ["insurance", "policy", "coverage", "protection", "security"]),
+        CategoryIconItem(id: "Smile", name: "Dental Care", symbol: "face.smiling.inverse", category: "health", keywords: ["dental", "teeth", "dentist", "smile", "hygiene"]),
+        CategoryIconItem(id: "Hospital", name: "Hospital", symbol: "cross.case.fill", category: "health", keywords: ["hospital", "emergency", "clinic", "surgery", "care"]),
 
         // Entertainment & Fun
-        CategoryIconItem(id: "Film", name: "Movies", symbol: "film.fill", category: "fun", keywords: ["film", "movie", "cinema", "netflix", "stream", "video"]),
-        CategoryIconItem(id: "Music", name: "Music", symbol: "music.note", category: "fun", keywords: ["music", "song", "spotify", "audio", "concert", "sound"]),
-        CategoryIconItem(id: "Gamepad2", name: "Gaming", symbol: "gamecontroller.fill", category: "fun", keywords: ["game", "gaming", "steam", "playstation", "xbox", "console"]),
-        CategoryIconItem(id: "Tv2", name: "Streaming", symbol: "play.tv.fill", category: "fun", keywords: ["tv", "shows", "streaming", "media", "series"]),
+        CategoryIconItem(id: "Film", name: "Cinema & Movies", symbol: "film.fill", category: "fun", keywords: ["cinema", "movie", "film", "theatre", "hollywood"]),
+        CategoryIconItem(id: "Music", name: "Music & Streaming", symbol: "music.note", category: "fun", keywords: ["music", "concert", "spotify", "apple music", "song", "audio"]),
+        CategoryIconItem(id: "Gamepad2", name: "Gaming", symbol: "gamecontroller.fill", category: "fun", keywords: ["game", "gaming", "playstation", "xbox", "steam", "nintendo"]),
+        CategoryIconItem(id: "Tv2", name: "Shows & Media", symbol: "play.tv.fill", category: "fun", keywords: ["tv", "show", "series", "youtube", "media", "streaming"]),
         CategoryIconItem(id: "BookOpen", name: "Reading", symbol: "book.closed.fill", category: "fun", keywords: ["book", "reading", "novel", "literature", "library"]),
         CategoryIconItem(id: "Camera", name: "Photography", symbol: "camera.fill", category: "fun", keywords: ["camera", "photo", "photography", "pictures", "media"]),
         CategoryIconItem(id: "Headphones", name: "Audio", symbol: "headphones", category: "fun", keywords: ["headphones", "music", "podcast", "audio", "listening"]),
@@ -217,280 +203,11 @@ struct AddCategoryView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // 1. Type Segmented Control
-                        HStack(spacing: 6) {
-                            ForEach(CategoryTypeOption.allCases, id: \.self) { opt in
-                                Button {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                                        type = opt
-                                    }
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: opt.icon)
-                                            .font(.caption.bold())
-                                        Text(opt.displayName)
-                                            .font(.subheadline.bold())
-                                    }
-                                    .foregroundColor(type == opt ? .white : Color.white.opacity(0.5))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        type == opt ?
-                                        LinearGradient(
-                                            colors: [activeThemeColor.opacity(0.85), activeThemeColor],
-                                            startPoint: .leading, endPoint: .trailing
-                                        ) :
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.04), Color.white.opacity(0.04)],
-                                            startPoint: .leading, endPoint: .trailing
-                                        )
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .shadow(color: type == opt ? activeThemeColor.opacity(0.3) : .clear, radius: 4)
-                                }
-                            }
-                        }
-                        .padding(4)
-                        .background(Color.white.opacity(0.03))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        typeSelectorSection
+                        nameAndPreviewSection
+                        colorPickerSection
+                        iconPickerSection
 
-                        // 2. Name & Dynamic Icon Preview Card
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("CATEGORY NAME")
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color.white.opacity(0.6))
-
-                            HStack(spacing: 12) {
-                                // Live icon swatch
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(activeThemeColor.opacity(0.2))
-                                        .frame(width: 48, height: 48)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14)
-                                                .stroke(activeThemeColor.opacity(0.6), lineWidth: 1.5)
-                                        )
-                                        .shadow(color: activeThemeColor.opacity(0.35), radius: 8)
-
-                                    Image(systemName: selectedSymbol)
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .foregroundColor(activeThemeColor)
-                                }
-
-                                TextField("e.g. Groceries, Gym, Freelance...", text: $name)
-                                    .textFieldStyle(.plain)
-                                    .foregroundColor(.white)
-                                    .font(.body)
-                                    .padding(14)
-                                    .background(Color.white.opacity(0.06))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                    )
-                            }
-                        }
-
-                        // 3. Color Selection (Palette + ColorPicker + Hex Field)
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("THEME COLOR")
-                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Spacer()
-
-                                // Hex Code text field badge
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(activeThemeColor)
-                                        .frame(width: 10, height: 10)
-                                        .shadow(color: activeThemeColor, radius: 4)
-
-                                    Text("#")
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundColor(Color.white.opacity(0.5))
-
-                                    TextField("818cf8", text: $hexInput)
-                                        .textFieldStyle(.plain)
-                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                        .foregroundColor(.white)
-                                        .frame(width: 60)
-                                        .textCase(.uppercase)
-                                        .autocorrectionDisabled()
-                                        .onChange(of: hexInput) { _, newValue in
-                                            let clean = newValue.filter { $0.isHexDigit }
-                                            if clean.count == 6 {
-                                                selectedColorHex = clean
-                                                customColor = Color(hex: clean)
-                                            }
-                                        }
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.white.opacity(0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                )
-                            }
-
-                            // Color swatches + ColorPicker
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 36))], spacing: 10) {
-                                ForEach(colorOptions, id: \.self) { c in
-                                    let isSelected = selectedColorHex.lowercased() == c.lowercased()
-                                    Circle()
-                                        .fill(Color(hex: c))
-                                        .frame(width: 34, height: 34)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white, lineWidth: isSelected ? 3 : 0)
-                                        )
-                                        .shadow(color: isSelected ? Color(hex: c).opacity(0.7) : Color.clear, radius: 6)
-                                        .scaleEffect(isSelected ? 1.15 : 1.0)
-                                        .onTapGesture {
-                                            withAnimation(.easeInOut(duration: 0.15)) {
-                                                selectedColorHex = c
-                                                hexInput = c
-                                                customColor = Color(hex: c)
-                                            }
-                                        }
-                                }
-
-                                // Native Apple ColorPicker button
-                                ColorPicker("", selection: $customColor, supportsOpacity: false)
-                                    .labelsHidden()
-                                    .frame(width: 34, height: 34)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Color.red, Color.yellow, Color.green, Color.blue, Color.purple],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white.opacity(0.5), lineWidth: 2)
-                                    )
-                                    .shadow(color: Color.black.opacity(0.3), radius: 4)
-                                    .onChange(of: customColor) { _, newColor in
-                                        let hex = newColor.toHex()
-                                        selectedColorHex = hex
-                                        hexInput = hex
-                                    }
-                            }
-                            .padding(12)
-                            .background(Color.white.opacity(0.04))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-
-                        // 4. Icon Picker Section (Search + Category Filter + Grid)
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("SELECT ICON (\(filteredIcons.count))")
-                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Spacer()
-                            }
-
-                            // Search bar
-                            HStack(spacing: 8) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color.white.opacity(0.5))
-
-                                TextField("Search icons...", text: $searchText)
-                                    .textFieldStyle(.plain)
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
-
-                                if !searchText.isEmpty {
-                                    Button {
-                                        searchText = ""
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(Color.white.opacity(0.5))
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.white.opacity(0.05))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                            // Category filter chips
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(filterCategories, id: \.id) { cat in
-                                        let isCatSelected = selectedCategoryFilter == cat.id
-                                        Button {
-                                            withAnimation(.easeInOut(duration: 0.15)) {
-                                                selectedCategoryFilter = cat.id
-                                            }
-                                        } label: {
-                                            Text(cat.title)
-                                                .font(.system(size: 12, weight: isCatSelected ? .bold : .medium))
-                                                .padding(.horizontal, 10)
-                                                .padding(.vertical, 5)
-                                                .background(
-                                                    isCatSelected ? activeThemeColor.opacity(0.25) : Color.white.opacity(0.04)
-                                                )
-                                                .foregroundColor(isCatSelected ? activeThemeColor : Color.white.opacity(0.6))
-                                                .clipShape(Capsule())
-                                                .overlay(
-                                                    Capsule()
-                                                        .stroke(isCatSelected ? activeThemeColor : Color.white.opacity(0.08), lineWidth: 1)
-                                                )
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 2)
-                            }
-
-                            // Scrollable Icon Grid
-                            ScrollView {
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 8) {
-                                    ForEach(filteredIcons) { item in
-                                        let isSelected = selectedIcon == item.id
-                                        Button {
-                                            withAnimation(.easeInOut(duration: 0.15)) {
-                                                selectedIcon = item.id
-                                            }
-                                        } label: {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .fill(isSelected ? activeThemeColor.opacity(0.25) : Color.white.opacity(0.03))
-                                                    .frame(height: 44)
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 10)
-                                                            .stroke(isSelected ? activeThemeColor : Color.white.opacity(0.05), lineWidth: isSelected ? 2 : 1)
-                                                    )
-                                                    .shadow(color: isSelected ? activeThemeColor.opacity(0.3) : .clear, radius: 4)
-
-                                                Image(systemName: item.symbol)
-                                                    .font(.system(size: 17, weight: .bold))
-                                                    .foregroundColor(isSelected ? activeThemeColor : Color.white.opacity(0.7))
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(10)
-                            }
-                            .frame(maxHeight: 180)
-                            .background(Color.white.opacity(0.03))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                        }
-
-                        // Error message
                         if let error = errorMessage {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -502,43 +219,16 @@ struct AddCategoryView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
 
-                        // Save Button
-                        Button {
-                            Task { await save() }
-                        } label: {
-                            Group {
-                                if isLoading {
-                                    ProgressView().tint(.white)
-                                } else {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "plus.circle.fill")
-                                        Text("Create Category")
-                                            .font(.headline.bold())
-                                    }
-                                    .foregroundColor(.white)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(16)
-                            .background(
-                                LinearGradient(
-                                    colors: [activeThemeColor.opacity(0.9), activeThemeColor],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .shadow(color: activeThemeColor.opacity(0.4), radius: 10, x: 0, y: 5)
-                        }
-                        .disabled(isLoading || name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        saveButtonSection
                     }
                     .padding(20)
                 }
             }
-            .navigationTitle("New Category")
+            .navigationTitle(L10n.Categories.modalCreateTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
@@ -549,6 +239,319 @@ struct AddCategoryView: View {
                     hexInput = "10b981"
                     customColor = Color(hex: "10b981")
                 }
+            }
+        }
+    }
+
+    // MARK: - Subviews
+    private var typeSelectorSection: some View {
+        HStack(spacing: 6) {
+            ForEach(CategoryTypeOption.allCases, id: \.self) { opt in
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        type = opt
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: opt.icon)
+                            .font(.caption.bold())
+                        Text(opt.displayName)
+                            .font(.subheadline.bold())
+                    }
+                    .foregroundColor(type == opt ? .white : Color.white.opacity(0.5))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        type == opt ?
+                        LinearGradient(
+                            colors: [activeThemeColor.opacity(0.85), activeThemeColor],
+                            startPoint: .leading, endPoint: .trailing
+                        ) :
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.04), Color.white.opacity(0.04)],
+                            startPoint: .leading, endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .shadow(color: type == opt ? activeThemeColor.opacity(0.3) : .clear, radius: 4)
+                }
+            }
+        }
+        .padding(4)
+        .background(Color.white.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var nameAndPreviewSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.Categories.categoryName.uppercased())
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.5))
+
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(activeThemeColor.opacity(0.2))
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            Circle()
+                                .stroke(activeThemeColor.opacity(0.4), lineWidth: 1.5)
+                        )
+                        .shadow(color: activeThemeColor.opacity(0.4), radius: 6)
+
+                    Image(systemName: selectedSymbol)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(activeThemeColor)
+                }
+
+                TextField(L10n.Categories.namePlaceholder, text: $name)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .textFieldStyle(.plain)
+                    .autocorrectionDisabled()
+            }
+            .padding(14)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var colorPickerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(L10n.Categories.selectColor.uppercased())
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.5))
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Text("#")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.4))
+
+                    TextField("HEX", text: $hexInput)
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .frame(width: 55)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .onChange(of: hexInput) { _, val in
+                            let clean = val.replacingOccurrences(of: "#", with: "").trimmingCharacters(in: .whitespaces)
+                            if clean.count == 6 {
+                                selectedColorHex = clean
+                                customColor = Color(hex: clean)
+                            }
+                        }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 36))], spacing: 10) {
+                ForEach(colorOptions, id: \.self) { c in
+                    colorSwatch(for: c)
+                }
+
+                ColorPicker("", selection: $customColor, supportsOpacity: false)
+                    .labelsHidden()
+                    .frame(width: 34, height: 34)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.red, Color.yellow, Color.green, Color.blue, Color.purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.5), lineWidth: 2)
+                    )
+                    .shadow(color: Color.black.opacity(0.3), radius: 4)
+                    .onChange(of: customColor) { _, newColor in
+                        let hex = newColor.toHex()
+                        selectedColorHex = hex
+                        hexInput = hex
+                    }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+    }
+
+    private var iconPickerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.Categories.selectIcon.uppercased())
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.5))
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(Color.white.opacity(0.4))
+                    .font(.caption)
+
+                TextField(L10n.Categories.searchIcons, text: $searchText)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .autocorrectionDisabled()
+
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.white.opacity(0.4))
+                            .font(.caption)
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(filterCategories, id: \.id) { cat in
+                        let isCatSelected = selectedCategoryFilter == cat.id
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedCategoryFilter = cat.id
+                            }
+                        } label: {
+                            Text(cat.title)
+                                .font(.system(size: 12, weight: isCatSelected ? .bold : .medium))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(
+                                    isCatSelected ? activeThemeColor.opacity(0.25) : Color.white.opacity(0.04)
+                                )
+                                .foregroundColor(isCatSelected ? activeThemeColor : Color.white.opacity(0.6))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(isCatSelected ? activeThemeColor : Color.white.opacity(0.08), lineWidth: 1)
+                                )
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 8) {
+                    ForEach(filteredIcons) { item in
+                        iconButton(for: item)
+                    }
+                }
+                .padding(10)
+            }
+            .frame(maxHeight: 180)
+            .background(Color.white.opacity(0.03))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            )
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
+    }
+
+    private var saveButtonSection: some View {
+        Button {
+            Task { await save() }
+        } label: {
+            Group {
+                if isLoading {
+                    ProgressView().tint(.white)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                        Text(L10n.Categories.createCategory)
+                            .font(.headline.bold())
+                    }
+                    .foregroundColor(.white)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(16)
+            .background(
+                LinearGradient(
+                    colors: [activeThemeColor.opacity(0.9), activeThemeColor],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: activeThemeColor.opacity(0.4), radius: 10, x: 0, y: 5)
+        }
+        .disabled(isLoading || name.trimmingCharacters(in: .whitespaces).isEmpty)
+    }
+
+    @ViewBuilder
+    private func colorSwatch(for c: String) -> some View {
+        let isSelected = selectedColorHex.lowercased() == c.lowercased()
+        Circle()
+            .fill(Color(hex: c))
+            .frame(width: 34, height: 34)
+            .overlay(
+                Circle()
+                    .stroke(Color.white, lineWidth: isSelected ? 3 : 0)
+            )
+            .shadow(color: isSelected ? Color(hex: c).opacity(0.7) : Color.clear, radius: 6)
+            .scaleEffect(isSelected ? 1.15 : 1.0)
+            .onTapGesture {
+                selectedColorHex = c
+                hexInput = c
+                customColor = Color(hex: c)
+            }
+    }
+
+    @ViewBuilder
+    private func iconButton(for item: CategoryIconItem) -> some View {
+        let isSelected = selectedIcon == item.id
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedIcon = item.id
+            }
+        } label: {
+            ZStack {
+                let fillCol = isSelected ? activeThemeColor.opacity(0.25) : Color.white.opacity(0.03)
+                let strokeCol = isSelected ? activeThemeColor : Color.white.opacity(0.05)
+                let strokeWidth: CGFloat = isSelected ? 2.0 : 1.0
+
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(fillCol)
+                    .frame(height: 44)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(strokeCol, lineWidth: strokeWidth)
+                    )
+
+                Image(systemName: item.symbol)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(isSelected ? activeThemeColor : Color.white.opacity(0.7))
             }
         }
     }

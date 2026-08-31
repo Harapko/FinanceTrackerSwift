@@ -96,7 +96,7 @@ struct AddTransactionView: View {
                         // 1. Sleek 3-Way Segmented Control
                         HStack(spacing: 0) {
                             tabPill(
-                                title: "EXPENSE",
+                                title: L10n.Transactions.typeExpense.uppercased(),
                                 icon: "arrow.down.right.circle.fill",
                                 isSelected: transactionType == .expense,
                                 activeColor: Color(hex: "f87171")
@@ -108,7 +108,7 @@ struct AddTransactionView: View {
                             }
 
                             tabPill(
-                                title: "INCOME",
+                                title: L10n.Transactions.typeIncome.uppercased(),
                                 icon: "arrow.up.right.circle.fill",
                                 isSelected: transactionType == .income,
                                 activeColor: Color(hex: "34d399")
@@ -120,7 +120,7 @@ struct AddTransactionView: View {
                             }
 
                             tabPill(
-                                title: "TRANSFER",
+                                title: L10n.Transactions.typeTransfer.uppercased(),
                                 icon: "arrow.left.arrow.right.circle.fill",
                                 isSelected: transactionType == .transfer,
                                 activeColor: Color(hex: "818cf8")
@@ -229,7 +229,7 @@ struct AddTransactionView: View {
 
                         // 5. Date Quick Selector
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Date", systemImage: "calendar")
+                            Label(L10n.Common.date, systemImage: "calendar")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
                                 .padding(.horizontal, 20)
@@ -317,7 +317,7 @@ struct AddTransactionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Common.cancel) { dismiss() }
                         .foregroundColor(Color(hex: "a78bfa"))
                 }
             }
@@ -330,7 +330,7 @@ struct AddTransactionView: View {
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") {
+                                Button(L10n.Common.done) {
                                     selectedDateOption = 3
                                     showDatePicker = false
                                 }
@@ -395,9 +395,9 @@ struct AddTransactionView: View {
 
     private var navigationTitle: String {
         switch transactionType {
-        case .expense: return "New Expense"
-        case .income: return "New Income"
-        case .transfer: return "Transfer Money"
+        case .expense: return L10n.Transactions.modalTitle
+        case .income: return L10n.Transactions.modalTitle
+        case .transfer: return L10n.Transactions.transferFunds
         }
     }
 
@@ -411,9 +411,9 @@ struct AddTransactionView: View {
 
     private var actionButtonTitle: String {
         switch transactionType {
-        case .expense: return "Add Expense"
-        case .income: return "Add Income"
-        case .transfer: return "Transfer Funds"
+        case .expense: return "\(L10n.Transactions.add) \(L10n.Transactions.typeExpense)"
+        case .income: return "\(L10n.Transactions.add) \(L10n.Transactions.typeIncome)"
+        case .transfer: return L10n.Transactions.transferFunds
         }
     }
 
@@ -457,7 +457,7 @@ struct AddTransactionView: View {
     @ViewBuilder
     private var standardAccountSelector: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Target Account", systemImage: "building.columns.fill")
+            Label(L10n.Transactions.sourceAccount, systemImage: "building.columns.fill")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(Color.white.opacity(0.6))
                 .padding(.horizontal, 20)
@@ -489,10 +489,10 @@ struct AddTransactionView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(selectedAccount?.name ?? (accounts.first?.name ?? "Select Account"))
+                        Text(selectedAccount?.name ?? (accounts.first?.name ?? L10n.Transactions.selectAccount))
                             .font(.subheadline.bold())
                             .foregroundColor(.white)
-                        Text("Balance: \(selectedAccount?.totalValue.formatted(currencyCode: selectedAccount?.currencyCode ?? currencyCode) ?? "0.00")")
+                        Text("\(L10n.Accounts.totalBalance): \(selectedAccount?.totalValue.formatted(currencyCode: selectedAccount?.currencyCode ?? currencyCode) ?? "0.00")")
                             .font(.caption2)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
@@ -720,7 +720,7 @@ struct AddTransactionView: View {
                                     .foregroundColor(Color(hex: "a78bfa"))
                             }
 
-                            Text("Add")
+                            Text(L10n.Transactions.add)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(Color(hex: "a78bfa"))
                                 .lineLimit(1)
@@ -855,7 +855,7 @@ struct AddTransactionView: View {
             amount: amount,
             currencyCode: currencyCode,
             exchangeRate: nil,
-            description: comment.trimmingCharacters(in: .whitespaces).isEmpty ? "Funds Transfer" : comment,
+            description: comment.trimmingCharacters(in: .whitespaces).isEmpty ? L10n.Transactions.transferDescDefault : comment,
             date: selectedDateString,
             payee: nil
         )

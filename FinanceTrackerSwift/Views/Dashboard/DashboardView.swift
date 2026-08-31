@@ -42,6 +42,7 @@ class DashboardViewModel {
 
 struct DashboardView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(LocalizationManager.self) private var localization
     @Environment(\.selectedTab) private var selectedTab
     @State private var viewModel = DashboardViewModel()
     @State private var showAddTransaction = false
@@ -56,7 +57,7 @@ struct DashboardView: View {
             VStack(spacing: 20) {
                 // Header
                 DashboardHeaderCard(
-                    greeting: "Good \(timeOfDay), \(auth.currentUser?.firstName ?? "Trader")",
+                    greeting: L10n.Dashboard.greeting(timeOfDay: timeOfDay, name: auth.currentUser?.firstName ?? L10n.Dashboard.trader),
                     userInitial: auth.currentUser?.firstName.prefix(1).uppercased() ?? "U",
                     currencyCode: $currencyCode,
                     availableCurrencies: availableCurrencies,
@@ -123,73 +124,35 @@ struct DashboardView: View {
             .padding(.vertical, 12)
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
-        .navigationTitle("Dashboard")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    if let user = auth.currentUser {
-                        Section(user.fullName) {
-                            Text(user.email).font(.caption)
-                        }
-                    }
-                    Button {
-                        showProfileSheet = true
-                    } label: {
-                        Label("Profile & Settings", systemImage: "person.crop.circle")
-                    }
-                    Divider()
-                    Button(role: .destructive) {
-                        showLogoutConfirmation = true
-                    } label: {
-                        Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(
-                                colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            ))
-                            .frame(width: 32, height: 32)
-                        Text(auth.currentUser?.firstName.prefix(1).uppercased() ?? "U")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-        }
         .refreshable {
             await viewModel.load(currencyCode: currencyCode, isManualRefresh: true)
         }
-        .sheet(isPresented: $showAddTransaction, onDismiss: {
-            Task { await viewModel.load(currencyCode: currencyCode, isManualRefresh: true) }
-        }) {
+        .sheet(isPresented: $showAddTransaction) {
             AddTransactionView {
-                Task { await viewModel.load(currencyCode: currencyCode, isManualRefresh: true) }
+                Task { await viewModel.load(currencyCode: currencyCode) }
             }
         }
         .sheet(isPresented: $showProfileSheet) {
             UserProfileSheet()
         }
         .confirmationDialog(
-            "Log Out",
+            L10n.Profile.logOutConfirmTitle,
             isPresented: $showLogoutConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Log Out", role: .destructive) {
+            Button(L10n.Profile.logOut, role: .destructive) {
                 auth.logout()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Common.cancel, role: .cancel) {}
         } message: {
-            Text("Are you sure you want to log out of your account?")
+            Text(L10n.Profile.logOutConfirmMsg)
         }
         .task {
-            let code = auth.currentUser?.defaultCurrencyCode ?? "USD"
-            currencyCode = code
-            await viewModel.load(currencyCode: code)
+            currencyCode = auth.currentUser?.defaultCurrencyCode ?? "USD"
+            await viewModel.load(currencyCode: currencyCode)
         }
-        .onChange(of: currencyCode) { _, new in
-            Task { await viewModel.load(currencyCode: new) }
+        .onChange(of: currencyCode) { _, newCurrency in
+            Task { await viewModel.load(currencyCode: newCurrency) }
         }
     }
 
@@ -198,8 +161,7 @@ struct DashboardView: View {
         switch hour {
         case 5..<12: return "morning"
         case 12..<17: return "afternoon"
-        case 17..<21: return "evening"
-        default: return "night"
+        default: return "evening"
         }
     }
 }
@@ -213,111 +175,128 @@ struct DashboardHeaderCard: View {
     let isRefreshing: Bool
     let onRefresh: () -> Void
     let onAddTransaction: () -> Void
-    var onOpenProfile: () -> Void = {}
-    var onLogout: () -> Void = {}
+    let onOpenProfile: () -> Void
+    let onLogout: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 12) {
+            // User Avatar Button
+            Button {
+                onOpenProfile()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 44, height: 44)
+                        .shadow(color: Color(hex: "818cf8").opacity(0.3), radius: 6, x: 0, y: 3)
+
+                    Text(userInitial)
+                        .font(.headline.bold())
+                        .foregroundColor(.white)
+                }
+            }
+            .buttonStyle(.plain)
+
+            // Greeting text
+            VStack(alignment: .leading, spacing: 2) {
                 Text(greeting)
-                    .font(.headline.weight(.bold))
+                    .font(.headline.bold())
                     .foregroundColor(.white)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Text("Financial Performance")
-                    .font(.caption)
+                    .truncationMode(.tail)
+                Text(L10n.Dashboard.subtitle)
+                    .font(.caption2)
                     .foregroundColor(Color.white.opacity(0.5))
                     .lineLimit(1)
+                    .truncationMode(.tail)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(0)
 
-            Spacer(minLength: 4)
-
-            HStack(spacing: 6) {
+            // Actions (Currency, Refresh, Add)
+            HStack(spacing: 8) {
                 // Currency Selector Menu
                 Menu {
-                    ForEach(availableCurrencies, id: \.self) { c in
+                    ForEach(availableCurrencies, id: \.self) { curr in
                         Button {
-                            currencyCode = c
+                            currencyCode = curr
                         } label: {
                             HStack {
-                                Text(c)
-                                if currencyCode == c {
+                                Text(curr)
+                                if currencyCode == curr {
                                     Image(systemName: "checkmark")
                                 }
                             }
                         }
                     }
                 } label: {
-                    HStack(spacing: 3) {
+                    HStack(spacing: 4) {
                         Text(currencyCode)
-                            .font(.caption.weight(.bold))
-                            .foregroundColor(.white)
-                            .fixedSize()
-                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption.bold())
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(Color(hex: "a78bfa"))
                     }
-                    .padding(.horizontal, 8)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .background(Color.white.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
 
-                // Refresh button
+                // Refresh Button
                 Button {
                     onRefresh()
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: "a78bfa"))
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white.opacity(0.8))
                         .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                         .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshing)
-                        .padding(7)
+                        .padding(8)
                         .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
                 }
                 .disabled(isRefreshing)
-                .fixedSize(horizontal: true, vertical: false)
 
-                // Add Transaction button (+ Add - Guaranteed single line)
+                // Add Transaction Button
                 Button {
                     onAddTransaction()
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("Add")
-                            .font(.system(size: 13, weight: .bold))
-                    }
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 7)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
-                            startPoint: .leading, endPoint: .trailing
+                    Image(systemName: "plus")
+                        .font(.caption.bold())
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")],
+                                startPoint: .leading, endPoint: .trailing
+                            )
                         )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 9))
+                        .clipShape(Circle())
+                        .shadow(color: Color(hex: "818cf8").opacity(0.4), radius: 6, x: 0, y: 2)
                 }
-                .fixedSize(horizontal: true, vertical: false)
             }
-            .fixedSize(horizontal: true, vertical: false)
         }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .padding(14)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
     }
 }
 
-// MARK: - Stats Overview (4 Cards)
+// MARK: - Dashboard Stats Overview (4 Cards Grid)
 struct DashboardStatsOverviewView: View {
     let stats: DashboardStatsResponse
 
@@ -325,9 +304,9 @@ struct DashboardStatsOverviewView: View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             // Net Worth
             DashboardStatCard(
-                title: "Net Worth",
+                title: L10n.Dashboard.netWorth,
                 valueText: stats.netWorth.formatted(currencyCode: stats.currencyCode),
-                subtitleLabel: "Assets: \(stats.totalAssets.formatted(currencyCode: stats.currencyCode))",
+                subtitleLabel: L10n.Dashboard.assetsFormatted(stats.totalAssets.formatted(currencyCode: stats.currencyCode)),
                 subtitleColor: Color(hex: "34d399"),
                 iconName: "wallet.pass.fill",
                 accentColor: Color(hex: "818cf8")
@@ -335,10 +314,10 @@ struct DashboardStatsOverviewView: View {
 
             // Monthly Income
             DashboardStatCard(
-                title: "Monthly Income",
+                title: L10n.Dashboard.monthlyIncome,
                 valueText: stats.income.formatted(currencyCode: stats.currencyCode),
                 valueColor: Color(hex: "34d399"),
-                subtitleLabel: "Earnings this month",
+                subtitleLabel: L10n.Dashboard.earningsSubtitle,
                 subtitleColor: Color.white.opacity(0.4),
                 iconName: "arrow.up.right.circle.fill",
                 accentColor: Color(hex: "34d399")
@@ -346,10 +325,10 @@ struct DashboardStatsOverviewView: View {
 
             // Monthly Expenses
             DashboardStatCard(
-                title: "Monthly Expenses",
+                title: L10n.Dashboard.monthlyExpenses,
                 valueText: stats.expenses.formatted(currencyCode: stats.currencyCode),
                 valueColor: Color(hex: "f87171"),
-                subtitleLabel: "Spending this month",
+                subtitleLabel: L10n.Dashboard.spendingSubtitle,
                 subtitleColor: Color.white.opacity(0.4),
                 iconName: "arrow.down.right.circle.fill",
                 accentColor: Color(hex: "f87171")
@@ -357,10 +336,10 @@ struct DashboardStatsOverviewView: View {
 
             // Savings Rate
             DashboardStatCard(
-                title: "Savings Rate",
+                title: L10n.Dashboard.savingsRate,
                 valueText: String(format: "%.1f%%", stats.savingsRate),
                 valueColor: Color(hex: "a78bfa"),
-                subtitleLabel: "Net: \((stats.income - stats.expenses).formatted(currencyCode: stats.currencyCode))",
+                subtitleLabel: L10n.Dashboard.netFormatted((stats.income - stats.expenses).formatted(currencyCode: stats.currencyCode)),
                 subtitleColor: Color.white.opacity(0.5),
                 iconName: "percent",
                 accentColor: Color(hex: "a78bfa")
@@ -421,7 +400,7 @@ struct DashboardAccountsWidgetView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Header
             HStack {
-                Text("Your Accounts")
+                Text(L10n.Dashboard.yourAccounts)
                     .font(.headline.bold())
                     .foregroundColor(.white)
                 Spacer()
@@ -429,7 +408,7 @@ struct DashboardAccountsWidgetView: View {
                     onSeeAll()
                 } label: {
                     HStack(spacing: 4) {
-                        Text("See All")
+                        Text(L10n.Dashboard.seeAll)
                             .font(.caption.weight(.semibold))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
@@ -447,7 +426,7 @@ struct DashboardAccountsWidgetView: View {
                     Image(systemName: "building.columns")
                         .font(.system(size: 32))
                         .foregroundColor(Color.white.opacity(0.2))
-                    Text("No accounts added yet")
+                    Text(L10n.Dashboard.noAccountsYet)
                         .font(.subheadline)
                         .foregroundColor(Color.white.opacity(0.4))
                 }

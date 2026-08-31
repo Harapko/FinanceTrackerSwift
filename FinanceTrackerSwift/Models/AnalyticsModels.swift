@@ -38,6 +38,17 @@ struct CategoryBreakdownEntry: Decodable, Identifiable {
 
     var id: String { categoryId }
     var total: Double { amount }
+
+    var safePercentage: Double {
+        if percentage.isNaN || percentage.isInfinite || percentage < 0 {
+            return 0.0
+        }
+        return min(percentage, 100.0)
+    }
+
+    var formattedPercentage: String {
+        return String(format: "%.0f%%", safePercentage)
+    }
 }
 
 // MARK: - Income vs Expense (monthly)

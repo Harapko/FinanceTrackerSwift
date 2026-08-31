@@ -21,7 +21,7 @@ struct AddSavingsGoalView: View {
     let targetPresets = ["500", "1000", "2500", "5000", "10000", "25000"]
 
     var isEditing: Bool { editingGoal != nil }
-    var title: String { isEditing ? "Edit Goal" : "New Savings Goal" }
+    var title: String { isEditing ? L10n.Savings.modalEditTitle : L10n.Savings.modalCreateTitle }
 
     var body: some View {
         NavigationStack {
@@ -63,13 +63,13 @@ struct AddSavingsGoalView: View {
                         }
 
                         // Name
-                        formField("Goal Name", icon: "target") {
-                            TextField("e.g. Emergency Fund, New Car...", text: $name)
+                        formField(L10n.Savings.goalName, icon: "target") {
+                            TextField(L10n.Savings.goalNamePlaceholder, text: $name)
                         }
 
                         // Target Amount
                         VStack(alignment: .leading, spacing: 8) {
-                            formField("Target Amount (optional)", icon: "dollarsign.circle") {
+                            formField(L10n.Savings.targetAmountOptional, icon: "dollarsign.circle") {
                                 TextField("0.00 (or leave blank for open goal)", text: $targetAmount)
                                     .keyboardType(.decimalPad)
                             }
@@ -77,7 +77,7 @@ struct AddSavingsGoalView: View {
                             // Presets
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 6) {
-                                    Text("Preset:")
+                                    Text(L10n.Savings.preset)
                                         .font(.caption2)
                                         .foregroundColor(Color.white.opacity(0.4))
                                     ForEach(targetPresets, id: \.self) { p in
@@ -99,7 +99,7 @@ struct AddSavingsGoalView: View {
 
                         // Currency
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Currency", systemImage: "dollarsign.circle").font(.caption.weight(.semibold)).foregroundColor(Color.white.opacity(0.6))
+                            Label(L10n.Common.currency, systemImage: "dollarsign.circle").font(.caption.weight(.semibold)).foregroundColor(Color.white.opacity(0.6))
                             Picker("Currency", selection: $currencyCode) {
                                 ForEach(currencies, id: \.self) { c in Text(c).tag(c) }
                             }
@@ -108,8 +108,8 @@ struct AddSavingsGoalView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
-                        formField("Deadline (YYYY-MM-DD)", icon: "calendar") { TextField("Optional target date", text: $deadline) }
-                        formField("Description", icon: "text.alignleft") { TextField("Optional description", text: $description) }
+                        formField(L10n.Savings.deadline, icon: "calendar") { TextField(L10n.Savings.optionalTargetDate, text: $deadline) }
+                        formField(L10n.Common.description, icon: "text.alignleft") { TextField(L10n.Savings.optionalDescription, text: $description) }
 
                         if let error = errorMessage {
                             HStack {
@@ -128,7 +128,7 @@ struct AddSavingsGoalView: View {
                         } label: {
                             Group {
                                 if isLoading { ProgressView().tint(.white) }
-                                else { Text(isEditing ? "Save Changes" : "Create Goal").font(.headline.bold()).foregroundColor(.white) }
+                                else { Text(isEditing ? L10n.Profile.saveChanges : L10n.Savings.createFirstGoal).font(.headline.bold()).foregroundColor(.white) }
                             }
                             .frame(maxWidth: .infinity).padding(16)
                             .background(LinearGradient(colors: [Color(hex: "818cf8"), Color(hex: "a78bfa")], startPoint: .leading, endPoint: .trailing))
@@ -143,7 +143,7 @@ struct AddSavingsGoalView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.foregroundColor(Color(hex: "a78bfa"))
+                    Button(L10n.Common.cancel) { dismiss() }.foregroundColor(Color(hex: "a78bfa"))
                 }
             }
         }
