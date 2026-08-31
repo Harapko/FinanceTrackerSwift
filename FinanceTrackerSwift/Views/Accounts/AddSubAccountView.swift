@@ -4,17 +4,30 @@ struct AddSubAccountView: View {
     @Environment(\.dismiss) private var dismiss
     let parentAccountId: String
     let parentCurrency: String
-    var editingSubAccount: SubAccountResponse? = nil
-    var onSuccess: (() -> Void) = {}
+    let editingSubAccount: SubAccountResponse?
+    let onSuccess: () -> Void
 
-    @State private var name = ""
+    @State private var name: String = ""
     @State private var type: SubAccountType = .checking
-    @State private var currencyCode = "USD"
-    @State private var description = ""
+    @State private var currencyCode: String = "USD"
+    @State private var balanceText: String = ""
+    @State private var description: String = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
 
     let currencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "AUD", "CHF", "BTC", "ETH", "SOL"]
+
+    init(
+        parentAccountId: String,
+        parentCurrency: String,
+        editingSubAccount: SubAccountResponse? = nil,
+        onSuccess: @escaping () -> Void = {}
+    ) {
+        self.parentAccountId = parentAccountId
+        self.parentCurrency = parentCurrency
+        self.editingSubAccount = editingSubAccount
+        self.onSuccess = onSuccess
+    }
 
     var isEditing: Bool { editingSubAccount != nil }
 
@@ -71,6 +84,37 @@ struct AddSubAccountView: View {
                                 .padding(14)
                                 .background(Color.white.opacity(0.07))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+
+                        // Balance (Initial or Current)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(isEditing ? L10n.Accounts.currentBalance : L10n.Accounts.initialBalance, systemImage: "banknote.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+
+                            HStack(spacing: 10) {
+                                Text(currencyCode)
+                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                    .foregroundColor(Color(hex: "34d399"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(hex: "34d399").opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                                TextField("0.00", text: $balanceText)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(14)
+                            .background(Color.white.opacity(0.07))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                            if isEditing {
+                                Text(L10n.Accounts.balanceAdjustmentHint)
+                                    .font(.caption2)
+                                    .foregroundColor(Color.white.opacity(0.5))
                             }
                         }
 
@@ -132,8 +176,10 @@ struct AddSubAccountView: View {
                     type = sub.type
                     currencyCode = sub.currencyCode
                     description = sub.description ?? ""
+                    balanceText = String(format: "%.2f", sub.cashBalance ?? 0)
                 } else {
                     currencyCode = parentCurrency
+                    balanceText = ""
                 }
             }
         }
@@ -146,13 +192,17 @@ struct AddSubAccountView: View {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+
+        let parsedBalance = Double(balanceText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+
         do {
             if let sub = editingSubAccount {
                 let payload = UpdateSubAccountPayload(
                     name: trimmedName,
                     type: type.rawValue,
                     currencyCode: currencyCode,
-                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
+                    balance: parsedBalance
                 )
                 let _: SubAccountResponse = try await AccountService.shared.updateSubAccount(
                     accountId: parentAccountId,
@@ -164,7 +214,8 @@ struct AddSubAccountView: View {
                     name: trimmedName,
                     type: type.rawValue,
                     currencyCode: currencyCode,
-                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description
+                    description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
+                    initialBalance: parsedBalance
                 )
                 let _: SubAccountResponse = try await AccountService.shared.createSubAccount(
                     accountId: parentAccountId,

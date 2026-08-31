@@ -237,6 +237,9 @@ public enum L10n {
         public static var subAccountName: String { isUk ? "Назва субрахунку" : "Sub-Account Name" }
         public static var subAccountNamePlaceholder: String { isUk ? "Резервний фонд, Заощадження..." : "e.g. Emergency Savings" }
         public static var accountType: String { isUk ? "Тип рахунку" : "Account Type" }
+        public static var initialBalance: String { isUk ? "Початковий баланс" : "Initial Balance" }
+        public static var currentBalance: String { isUk ? "Поточний залишок" : "Current Cash Balance" }
+        public static var balanceAdjustmentHint: String { isUk ? "Зміна цього значення автоматично створить коригувальну транзакцію." : "Changing this value will automatically create a balance adjustment transaction." }
         public static var subAccountType: String { isUk ? "Тип субрахунку" : "Sub-Account Type" }
         public static var typeBankAccount: String { isUk ? "Банківський рахунок" : "Bank Account" }
         public static var typeCreditCard: String { isUk ? "Кредитна картка" : "Credit Card" }

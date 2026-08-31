@@ -91,6 +91,18 @@ struct CreateAccountPayload: Encodable {
     let currencyCode: String
     let description: String?
     let color: String?
+    let initialBalance: Double?
+    let balance: Double?
+
+    init(name: String, type: String, currencyCode: String, description: String? = nil, color: String? = nil, initialBalance: Double? = nil, balance: Double? = nil) {
+        self.name = name
+        self.type = type
+        self.currencyCode = currencyCode
+        self.description = description
+        self.color = color
+        self.initialBalance = initialBalance
+        self.balance = balance
+    }
 }
 
 struct UpdateAccountPayload: Encodable {
@@ -99,6 +111,16 @@ struct UpdateAccountPayload: Encodable {
     let currencyCode: String
     let description: String?
     let color: String?
+    let balance: Double?
+
+    init(name: String, type: String, currencyCode: String, description: String? = nil, color: String? = nil, balance: Double? = nil) {
+        self.name = name
+        self.type = type
+        self.currencyCode = currencyCode
+        self.description = description
+        self.color = color
+        self.balance = balance
+    }
 }
 
 struct CreateSubAccountPayload: Encodable {
@@ -106,6 +128,17 @@ struct CreateSubAccountPayload: Encodable {
     let type: String
     let currencyCode: String
     let description: String?
+    let initialBalance: Double?
+    let balance: Double?
+
+    init(name: String, type: String, currencyCode: String, description: String? = nil, initialBalance: Double? = nil, balance: Double? = nil) {
+        self.name = name
+        self.type = type
+        self.currencyCode = currencyCode
+        self.description = description
+        self.initialBalance = initialBalance
+        self.balance = balance
+    }
 }
 
 struct UpdateSubAccountPayload: Encodable {
@@ -113,4 +146,13 @@ struct UpdateSubAccountPayload: Encodable {
     let type: String
     let currencyCode: String
     let description: String?
+    let balance: Double?
+
+    init(name: String, type: String, currencyCode: String, description: String? = nil, balance: Double? = nil) {
+        self.name = name
+        self.type = type
+        self.currencyCode = currencyCode
+        self.description = description
+        self.balance = balance
+    }
 }

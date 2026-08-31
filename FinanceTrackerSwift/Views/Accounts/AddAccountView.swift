@@ -8,6 +8,7 @@ struct AddAccountView: View {
     @State private var name: String
     @State private var type: AccountType
     @State private var currencyCode: String
+    @State private var balanceText: String
     @State private var color: String
     @State private var description: String
     @State private var isLoading = false
@@ -22,6 +23,7 @@ struct AddAccountView: View {
         _name = State(initialValue: editingAccount?.name ?? "")
         _type = State(initialValue: editingAccount?.type ?? .bankAccount)
         _currencyCode = State(initialValue: editingAccount?.currencyCode ?? "USD")
+        _balanceText = State(initialValue: editingAccount != nil ? String(format: "%.2f", editingAccount?.balance ?? 0) : "")
         _color = State(initialValue: editingAccount?.color ?? "#818cf8")
         _description = State(initialValue: editingAccount?.description ?? "")
     }
@@ -41,10 +43,10 @@ struct AddAccountView: View {
                     VStack(spacing: 20) {
                         // 1. Account Name
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Account Name", systemImage: "building.columns.fill")
+                            Label(L10n.Accounts.accountName, systemImage: "building.columns.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
-                            TextField("e.g. My Chase Account, Freedom Finance", text: $name)
+                            TextField(L10n.Accounts.accountNamePlaceholder, text: $name)
                                 .textFieldStyle(.plain)
                                 .padding(14)
                                 .background(Color.white.opacity(0.05))
@@ -55,7 +57,7 @@ struct AddAccountView: View {
 
                         // 2. Account Type (Full-Width Dropdown Card)
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Account Type", systemImage: "creditcard.fill")
+                            Label(L10n.Accounts.accountType, systemImage: "creditcard.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
 
@@ -79,9 +81,11 @@ struct AddAccountView: View {
                                         .foregroundColor(selectedColor)
                                         .frame(width: 28)
 
-                                    Text(type.displayName)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundColor(.white)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(type.displayName)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(.white)
+                                    }
 
                                     Spacer()
 
@@ -96,29 +100,22 @@ struct AddAccountView: View {
                             }
                         }
 
-                        // 3. Currency (Full-Width Dropdown Card)
+                        // 3. Currency Selector
                         VStack(alignment: .leading, spacing: 8) {
-                            Label("Currency", systemImage: "dollarsign.circle.fill")
+                            Label(L10n.Common.currency, systemImage: "dollarsign.circle.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
 
                             Menu {
                                 ForEach(currencies, id: \.self) { c in
-                                    Button {
+                                    Button(c) {
                                         currencyCode = c
-                                    } label: {
-                                        HStack {
-                                            Text(c)
-                                            if currencyCode == c {
-                                                Image(systemName: "checkmark")
-                                            }
-                                        }
                                     }
                                 }
                             } label: {
-                                HStack(spacing: 12) {
+                                HStack {
                                     Text(currencyCode)
-                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .font(.subheadline.weight(.bold))
                                         .foregroundColor(Color(hex: "34d399"))
 
                                     Spacer()
@@ -134,7 +131,39 @@ struct AddAccountView: View {
                             }
                         }
 
-                        // 4. Accent Color Ribbon
+                        // 4. Balance (Initial or Current)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(isEditing ? L10n.Accounts.currentBalance : L10n.Accounts.initialBalance, systemImage: "banknote.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+
+                            HStack(spacing: 10) {
+                                Text(currencyCode)
+                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                    .foregroundColor(Color(hex: "34d399"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(hex: "34d399").opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                                TextField("0.00", text: $balanceText)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(14)
+                            .background(Color.white.opacity(0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
+
+                            if isEditing {
+                                Text(L10n.Accounts.balanceAdjustmentHint)
+                                    .font(.caption2)
+                                    .foregroundColor(Color.white.opacity(0.5))
+                            }
+                        }
+
+                        // 5. Accent Color Ribbon
                         VStack(alignment: .leading, spacing: 10) {
                             Label(L10n.Accounts.themeColor, systemImage: "paintpalette.fill")
                                 .font(.caption.weight(.semibold))
@@ -162,7 +191,7 @@ struct AddAccountView: View {
                             }
                         }
 
-                        // 5. Description (Optional)
+                        // 6. Description (Optional)
                         VStack(alignment: .leading, spacing: 8) {
                             Label(L10n.Accounts.descriptionOptional, systemImage: "text.alignleft")
                                 .font(.caption.weight(.semibold))
@@ -252,6 +281,9 @@ struct AddAccountView: View {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+
+        let parsedBalance = Double(balanceText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+
         do {
             if let acc = editingAccount {
                 let payload = UpdateAccountPayload(
@@ -259,7 +291,8 @@ struct AddAccountView: View {
                     type: type.rawValue,
                     currencyCode: currencyCode,
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    color: color
+                    color: color,
+                    balance: parsedBalance
                 )
                 let _: AccountResponse = try await AccountService.shared.updateAccount(id: acc.id, payload: payload)
             } else {
@@ -268,7 +301,8 @@ struct AddAccountView: View {
                     type: type.rawValue,
                     currencyCode: currencyCode,
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    color: color
+                    color: color,
+                    initialBalance: parsedBalance
                 )
                 let _: AccountResponse = try await AccountService.shared.createAccount(payload)
             }
