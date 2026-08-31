@@ -88,6 +88,39 @@ final class AuthManager {
         }
     }
 
+    // MARK: - Update Profile
+    @discardableResult
+    func updateProfile(firstName: String, lastName: String, defaultCurrencyCode: String) async throws -> UserResponse {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            let updatedUser: UserResponse = try await APIClient.shared.put(
+                "/api/auth/me",
+                body: UpdateUserRequest(
+                    firstName: firstName,
+                    lastName: lastName,
+                    defaultCurrencyCode: defaultCurrencyCode,
+                    timezone: currentUser?.timezone ?? "UTC"
+                )
+            )
+            await MainActor.run {
+                self.currentUser = updatedUser
+                // Persist updated user as JSON
+                if let data = try? JSONEncoder().encode(updatedUser),
+                   let json = String(data: data, encoding: .utf8) {
+                    KeychainHelper.shared.save(key: "finance_tracker_user", value: json)
+                }
+            }
+            return updatedUser
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+            }
+            throw error
+        }
+    }
+
     // MARK: - Logout
     func logout() {
         KeychainHelper.shared.delete(key: "finance_tracker_token")

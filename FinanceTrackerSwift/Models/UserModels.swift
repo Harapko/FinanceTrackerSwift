@@ -13,6 +13,13 @@ struct RegisterRequest: Encodable {
     let defaultCurrencyCode: String
 }
 
+struct UpdateUserRequest: Encodable {
+    let firstName: String?
+    let lastName: String?
+    let defaultCurrencyCode: String?
+    let timezone: String?
+}
+
 struct UserResponse: Codable, Identifiable {
     let id: String
     let firstName: String
