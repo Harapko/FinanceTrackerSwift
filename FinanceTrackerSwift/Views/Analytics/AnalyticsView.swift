@@ -57,6 +57,51 @@ struct AnalyticsView: View {
     @State private var currencyCode = "USD"
     @State private var fromDate = ""
     @State private var toDate = ""
+    @State private var showDateRangeSheet = false
+    @State private var tempStartDate = Date()
+    @State private var tempEndDate = Date()
+
+    private var isoFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }
+
+    private var displayFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }
+
+    var hasActiveDateFilter: Bool {
+        !fromDate.isEmpty || !toDate.isEmpty
+    }
+
+    var dateRangeDisplayText: String {
+        if fromDate.isEmpty && toDate.isEmpty {
+            return "All Time"
+        }
+        if !fromDate.isEmpty && !toDate.isEmpty {
+            if fromDate == toDate {
+                if let d = isoFormatter.date(from: fromDate) {
+                    return displayFormatter.string(from: d)
+                }
+                return fromDate
+            }
+            let fromStr = isoFormatter.date(from: fromDate).map { displayFormatter.string(from: $0) } ?? fromDate
+            let toStr = isoFormatter.date(from: toDate).map { displayFormatter.string(from: $0) } ?? toDate
+            return "\(fromStr) — \(toStr)"
+        }
+        if !fromDate.isEmpty {
+            let fromStr = isoFormatter.date(from: fromDate).map { displayFormatter.string(from: $0) } ?? fromDate
+            return "From \(fromStr)"
+        }
+        if !toDate.isEmpty {
+            let toStr = isoFormatter.date(from: toDate).map { displayFormatter.string(from: $0) } ?? toDate
+            return "Until \(toStr)"
+        }
+        return "Select Date Range"
+    }
 
     var filters: AnalyticsFilters {
         AnalyticsFilters(fromDate: fromDate.isEmpty ? nil : fromDate,
@@ -95,35 +140,57 @@ struct AnalyticsView: View {
                         }
                     }
 
-                    // Date filters
-                    HStack(spacing: 10) {
-                        HStack {
-                            Text("From:").font(.caption).foregroundColor(Color.white.opacity(0.5))
-                            TextField("YYYY-MM-DD", text: $fromDate)
-                                .font(.caption)
-                                .foregroundColor(.white)
+                    // Interactive Date Range Selector Pill
+                    Button {
+                        if let d1 = isoFormatter.date(from: fromDate) {
+                            tempStartDate = d1
+                        } else {
+                            tempStartDate = Date()
                         }
-                        .padding(10)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                        HStack {
-                            Text("To:").font(.caption).foregroundColor(Color.white.opacity(0.5))
-                            TextField("YYYY-MM-DD", text: $toDate)
-                                .font(.caption)
-                                .foregroundColor(.white)
+                        if let d2 = isoFormatter.date(from: toDate) {
+                            tempEndDate = d2
+                        } else {
+                            tempEndDate = Date()
                         }
-                        .padding(10)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        showDateRangeSheet = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar")
+                                .font(.subheadline)
+                                .foregroundColor(hasActiveDateFilter ? Color(hex: "818cf8") : Color.white.opacity(0.6))
 
-                        Button("Apply") { reload() }
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(Color(hex: "818cf8"))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            Text(dateRangeDisplayText)
+                                .font(.subheadline.weight(hasActiveDateFilter ? .semibold : .regular))
+                                .foregroundColor(hasActiveDateFilter ? .white : Color.white.opacity(0.8))
+                                .lineLimit(1)
+
+                            Spacer()
+
+                            if hasActiveDateFilter {
+                                Button {
+                                    fromDate = ""
+                                    toDate = ""
+                                    reload()
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption)
+                                        .foregroundColor(Color.white.opacity(0.5))
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            Image(systemName: "chevron.down")
+                                .font(.caption2)
+                                .foregroundColor(Color.white.opacity(0.4))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(hasActiveDateFilter ? Color(hex: "818cf8").opacity(0.15) : Color.white.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(hasActiveDateFilter ? Color(hex: "818cf8").opacity(0.4) : Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
                 .padding(.horizontal, 4)
@@ -164,11 +231,195 @@ struct AnalyticsView: View {
             .padding(.vertical, 12)
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
+        .sheet(isPresented: $showDateRangeSheet) {
+            dateRangeSheet
+        }
         .task {
             currencyCode = auth.currentUser?.defaultCurrencyCode ?? "USD"
             reload()
         }
         .onChange(of: currencyCode) { _, _ in reload() }
+    }
+
+    private func applyPreset(_ preset: String) {
+        let calendar = Calendar.current
+        let now = Date()
+
+        switch preset {
+        case "Today":
+            tempStartDate = now
+            tempEndDate = now
+        case "Yesterday":
+            if let y = calendar.date(byAdding: .day, value: -1, to: now) {
+                tempStartDate = y
+                tempEndDate = y
+            }
+        case "Last 7 Days":
+            if let d = calendar.date(byAdding: .day, value: -6, to: now) {
+                tempStartDate = d
+                tempEndDate = now
+            }
+        case "Last 30 Days":
+            if let d = calendar.date(byAdding: .day, value: -29, to: now) {
+                tempStartDate = d
+                tempEndDate = now
+            }
+        case "This Month":
+            let comps = calendar.dateComponents([.year, .month], from: now)
+            if let start = calendar.date(from: comps),
+               let range = calendar.range(of: .day, in: .month, for: now),
+               let end = calendar.date(byAdding: .day, value: range.count - 1, to: start) {
+                tempStartDate = start
+                tempEndDate = end
+            }
+        case "Last Month":
+            if let prevMonth = calendar.date(byAdding: .month, value: -1, to: now) {
+                let comps = calendar.dateComponents([.year, .month], from: prevMonth)
+                if let start = calendar.date(from: comps),
+                   let range = calendar.range(of: .day, in: .month, for: prevMonth),
+                   let end = calendar.date(byAdding: .day, value: range.count - 1, to: start) {
+                    tempStartDate = start
+                    tempEndDate = end
+                }
+            }
+        case "Last 90 Days":
+            if let d = calendar.date(byAdding: .day, value: -89, to: now) {
+                tempStartDate = d
+                tempEndDate = now
+            }
+        case "This Year":
+            let comps = calendar.dateComponents([.year], from: now)
+            if let start = calendar.date(from: comps),
+               let nextYear = calendar.date(byAdding: .year, value: 1, to: start),
+               let end = calendar.date(byAdding: .day, value: -1, to: nextYear) {
+                tempStartDate = start
+                tempEndDate = end
+            }
+        case "Last Year":
+            if let prevYear = calendar.date(byAdding: .year, value: -1, to: now) {
+                let comps = calendar.dateComponents([.year], from: prevYear)
+                if let start = calendar.date(from: comps),
+                   let thisYearStart = calendar.date(byAdding: .year, value: 1, to: start),
+                   let end = calendar.date(byAdding: .day, value: -1, to: thisYearStart) {
+                    tempStartDate = start
+                    tempEndDate = end
+                }
+            }
+        default:
+            break
+        }
+    }
+
+    private var dateRangeSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Quick Presets
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("QUICK PRESETS")
+                            .font(.caption.bold())
+                            .foregroundColor(Color.white.opacity(0.5))
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(["This Month", "Last Month", "Last 30 Days", "Last 90 Days", "This Year", "Last Year", "Today"], id: \.self) { preset in
+                                    Button {
+                                        applyPreset(preset)
+                                    } label: {
+                                        Text(preset)
+                                            .font(.caption.weight(.medium))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(Color.white.opacity(0.1))
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 12)
+
+                    // Date Pickers
+                    VStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Start Date")
+                                .font(.caption.bold())
+                                .foregroundColor(Color.white.opacity(0.6))
+                            DatePicker("Start Date", selection: $tempStartDate, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .labelsHidden()
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("End Date")
+                                .font(.caption.bold())
+                                .foregroundColor(Color.white.opacity(0.6))
+                            DatePicker("End Date", selection: $tempEndDate, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .labelsHidden()
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    // Actions
+                    HStack(spacing: 12) {
+                        Button {
+                            fromDate = ""
+                            toDate = ""
+                            showDateRangeSheet = false
+                            reload()
+                        } label: {
+                            Text("Reset (All Time)")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(Color.white.opacity(0.8))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+
+                        Button {
+                            fromDate = isoFormatter.string(from: tempStartDate)
+                            toDate = isoFormatter.string(from: tempEndDate)
+                            showDateRangeSheet = false
+                            reload()
+                        } label: {
+                            Text("Apply Filter")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color(hex: "818cf8"))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                }
+            }
+            .background(Color(hex: "0d1117").ignoresSafeArea())
+            .navigationTitle("Select Date Range")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        showDateRangeSheet = false
+                    }
+                    .foregroundColor(Color(hex: "a78bfa"))
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     private func reload() {
@@ -181,6 +432,7 @@ struct AnalyticsView: View {
         }
     }
 }
+
 
 // MARK: - Cash Flow Tab
 struct CashFlowTabView: View {
