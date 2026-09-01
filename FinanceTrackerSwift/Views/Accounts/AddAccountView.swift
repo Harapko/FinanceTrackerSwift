@@ -286,13 +286,14 @@ struct AddAccountView: View {
 
         do {
             if let acc = editingAccount {
+                let isBalanceModified = parsedBalance != nil && abs((parsedBalance ?? 0) - acc.balance) >= 0.01
                 let payload = UpdateAccountPayload(
                     name: trimmedName,
                     type: type.rawValue,
                     currencyCode: currencyCode,
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
                     color: color,
-                    balance: parsedBalance
+                    balance: isBalanceModified ? parsedBalance : nil
                 )
                 let _: AccountResponse = try await AccountService.shared.updateAccount(id: acc.id, payload: payload)
             } else {

@@ -197,12 +197,13 @@ struct AddSubAccountView: View {
 
         do {
             if let sub = editingSubAccount {
+                let isBalanceModified = parsedBalance != nil && abs((parsedBalance ?? 0) - (sub.cashBalance ?? 0)) >= 0.01
                 let payload = UpdateSubAccountPayload(
                     name: trimmedName,
                     type: type.rawValue,
                     currencyCode: currencyCode,
                     description: description.trimmingCharacters(in: .whitespaces).isEmpty ? nil : description,
-                    balance: parsedBalance
+                    balance: isBalanceModified ? parsedBalance : nil
                 )
                 let _: SubAccountResponse = try await AccountService.shared.updateSubAccount(
                     accountId: parentAccountId,
