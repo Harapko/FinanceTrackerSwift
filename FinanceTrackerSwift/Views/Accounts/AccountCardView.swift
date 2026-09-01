@@ -9,6 +9,13 @@ struct AccountCardView: View {
     var onEditSubAccount: (SubAccountResponse) -> Void = { _ in }
     var onDeleteSubAccount: (SubAccountResponse) -> Void = { _ in }
     var onAddAssetToSubAccount: (SubAccountResponse) -> Void = { _ in }
+    var isReordering: Bool = false
+    var canMoveUp: Bool = false
+    var canMoveDown: Bool = false
+    var onMoveUp: () -> Void = {}
+    var onMoveDown: () -> Void = {}
+    var onMoveSubAccountUp: (SubAccountResponse, Int) -> Void = { _, _ in }
+    var onMoveSubAccountDown: (SubAccountResponse, Int) -> Void = { _, _ in }
 
     @State private var isExpanded = true
     @State private var holdings: [HoldingResponse] = []
@@ -44,54 +51,82 @@ struct AccountCardView: View {
                 Spacer()
 
                 // Action buttons
-                HStack(spacing: 6) {
-                    Button {
-                        onAddAsset()
-                    } label: {
-                        Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(Color(hex: "34d399"))
-                    }
+                if isReordering {
+                    HStack(spacing: 8) {
+                        Button {
+                            onMoveUp()
+                        } label: {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(canMoveUp ? accentColor : Color.white.opacity(0.2))
+                                .frame(width: 32, height: 32)
+                                .background(accentColor.opacity(canMoveUp ? 0.18 : 0.05))
+                                .clipShape(Circle())
+                        }
+                        .disabled(!canMoveUp)
 
-                    Button {
-                        onAddSubAccount()
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(Color(hex: "818cf8"))
+                        Button {
+                            onMoveDown()
+                        } label: {
+                            Image(systemName: "arrow.down")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(canMoveDown ? accentColor : Color.white.opacity(0.2))
+                                .frame(width: 32, height: 32)
+                                .background(accentColor.opacity(canMoveDown ? 0.18 : 0.05))
+                                .clipShape(Circle())
+                        }
+                        .disabled(!canMoveDown)
                     }
-
-                    Menu {
+                } else {
+                    HStack(spacing: 6) {
                         Button {
                             onAddAsset()
                         } label: {
-                            Label(L10n.Accounts.buyAddAsset, systemImage: "chart.line.uptrend.xyaxis")
+                            Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(hex: "34d399"))
                         }
 
                         Button {
                             onAddSubAccount()
                         } label: {
-                            Label("Add Sub-Account", systemImage: "plus.rectangle.on.rectangle")
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(hex: "818cf8"))
                         }
 
-                        Button {
-                            onEdit()
+                        Menu {
+                            Button {
+                                onAddAsset()
+                            } label: {
+                                Label(L10n.Accounts.buyAddAsset, systemImage: "chart.line.uptrend.xyaxis")
+                            }
+
+                            Button {
+                                onAddSubAccount()
+                            } label: {
+                                Label("Add Sub-Account", systemImage: "plus.rectangle.on.rectangle")
+                            }
+
+                            Button {
+                                onEdit()
+                            } label: {
+                                Label(L10n.Accounts.editAccount, systemImage: "pencil")
+                            }
+
+                            Divider()
+
+                            Button(role: .destructive) {
+                                onDelete()
+                            } label: {
+                                Label(L10n.Accounts.deleteAccount, systemImage: "trash")
+                            }
                         } label: {
-                            Label(L10n.Accounts.editAccount, systemImage: "pencil")
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(Color.white.opacity(0.4))
+                                .padding(6)
                         }
-
-                        Divider()
-
-                        Button(role: .destructive) {
-                            onDelete()
-                        } label: {
-                            Label(L10n.Accounts.deleteAccount, systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color.white.opacity(0.4))
-                            .padding(6)
                     }
                 }
             }
@@ -185,12 +220,17 @@ struct AccountCardView: View {
 
                     if isExpanded {
                         VStack(spacing: 8) {
-                            ForEach(account.subAccountsList) { sub in
+                            ForEach(Array(account.subAccountsList.enumerated()), id: \.element.id) { subIndex, sub in
                                 SubAccountCardRow(
                                     subAccount: sub,
                                     onEdit: { onEditSubAccount(sub) },
                                     onDelete: { onDeleteSubAccount(sub) },
-                                    onAddAsset: { onAddAssetToSubAccount(sub) }
+                                    onAddAsset: { onAddAssetToSubAccount(sub) },
+                                    isReordering: isReordering && account.subAccountsList.count > 1,
+                                    canMoveUp: subIndex > 0,
+                                    canMoveDown: subIndex < account.subAccountsList.count - 1,
+                                    onMoveUp: { onMoveSubAccountUp(sub, subIndex) },
+                                    onMoveDown: { onMoveSubAccountDown(sub, subIndex) }
                                 )
                             }
                         }
@@ -228,6 +268,11 @@ struct SubAccountCardRow: View {
     var onEdit: () -> Void = {}
     var onDelete: () -> Void = {}
     var onAddAsset: () -> Void = {}
+    var isReordering: Bool = false
+    var canMoveUp: Bool = false
+    var canMoveDown: Bool = false
+    var onMoveUp: () -> Void = {}
+    var onMoveDown: () -> Void = {}
 
     @State private var holdings: [HoldingResponse] = []
     @State private var isExpanded = false
@@ -270,31 +315,59 @@ struct SubAccountCardRow: View {
                     }
                 }
 
-                Menu {
-                    Button {
-                        onAddAsset()
-                    } label: {
-                        Label(L10n.Accounts.buyAddAsset, systemImage: "chart.line.uptrend.xyaxis")
-                    }
+                if isReordering {
+                    HStack(spacing: 4) {
+                        Button {
+                            onMoveUp()
+                        } label: {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(canMoveUp ? Color(hex: "a78bfa") : Color.white.opacity(0.2))
+                                .frame(width: 24, height: 24)
+                                .background(Color(hex: "a78bfa").opacity(canMoveUp ? 0.15 : 0.05))
+                                .clipShape(Circle())
+                        }
+                        .disabled(!canMoveUp)
 
-                    Button {
-                        onEdit()
-                    } label: {
-                        Label(L10n.Accounts.editSubAccount, systemImage: "pencil")
+                        Button {
+                            onMoveDown()
+                        } label: {
+                            Image(systemName: "arrow.down")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(canMoveDown ? Color(hex: "a78bfa") : Color.white.opacity(0.2))
+                                .frame(width: 24, height: 24)
+                                .background(Color(hex: "a78bfa").opacity(canMoveDown ? 0.15 : 0.05))
+                                .clipShape(Circle())
+                        }
+                        .disabled(!canMoveDown)
                     }
+                } else {
+                    Menu {
+                        Button {
+                            onAddAsset()
+                        } label: {
+                            Label(L10n.Accounts.buyAddAsset, systemImage: "chart.line.uptrend.xyaxis")
+                        }
 
-                    Divider()
+                        Button {
+                            onEdit()
+                        } label: {
+                            Label(L10n.Accounts.editSubAccount, systemImage: "pencil")
+                        }
 
-                    Button(role: .destructive) {
-                        onDelete()
+                        Divider()
+
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Label(L10n.Accounts.deleteSubAccount, systemImage: "trash")
+                        }
                     } label: {
-                        Label(L10n.Accounts.deleteSubAccount, systemImage: "trash")
+                        Image(systemName: "ellipsis")
+                            .font(.caption.bold())
+                            .foregroundColor(Color.white.opacity(0.3))
+                            .padding(.horizontal, 4)
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.caption.bold())
-                        .foregroundColor(Color.white.opacity(0.3))
-                        .padding(.horizontal, 4)
                 }
             }
 

@@ -254,6 +254,11 @@ public enum L10n {
         public static var subTypeInvestment: String { isUk ? "Інвестиційний" : "Investment" }
         public static var subTypeCash: String { isUk ? "Готівковий" : "Cash" }
         public static var themeColor: String { isUk ? "Колір теми" : "Accent Color" }
+        public static var reorder: String { isUk ? "Порядок" : "Reorder" }
+        public static var doneReordering: String { isUk ? "Готово" : "Done" }
+        public static var reorderHelp: String { isUk ? "Використовуйте стрілки для зміни порядку відображення рахунків." : "Use the arrow buttons to rearrange account display order." }
+        public static var moveUp: String { isUk ? "Вгору" : "Move Up" }
+        public static var moveDown: String { isUk ? "Вниз" : "Move Down" }
         public static var descriptionOptional: String { isUk ? "Опис (необов'язково)" : "Description (optional)" }
         public static var descriptionPlaceholder: String { isUk ? "Примітки або опис..." : "Notes or description..." }
         public static var deleteConfirmTitle: String { isUk ? "Видалити рахунок" : "Delete Account" }

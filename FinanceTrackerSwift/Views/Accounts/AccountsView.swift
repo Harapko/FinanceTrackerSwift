@@ -29,6 +29,76 @@ class AccountsViewModel {
         }
     }
 
+    func moveAccountUp(index: Int) async {
+        guard index > 0 && index < accounts.count else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            let account = accounts.remove(at: index)
+            accounts.insert(account, at: index - 1)
+        }
+        let ids = accounts.map { $0.id }
+        do {
+            try await AccountService.shared.reorderAccounts(accountIds: ids)
+        } catch {
+            errorMessage = error.localizedDescription
+            await load()
+        }
+    }
+
+    func moveAccountDown(index: Int) async {
+        guard index >= 0 && index < accounts.count - 1 else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            let account = accounts.remove(at: index)
+            accounts.insert(account, at: index + 1)
+        }
+        let ids = accounts.map { $0.id }
+        do {
+            try await AccountService.shared.reorderAccounts(accountIds: ids)
+        } catch {
+            errorMessage = error.localizedDescription
+            await load()
+        }
+    }
+
+    func moveSubAccountUp(accountId: String, subIndex: Int) async {
+        guard let accIndex = accounts.firstIndex(where: { $0.id == accountId }),
+              var subs = accounts[accIndex].subAccounts,
+              subIndex > 0 && subIndex < subs.count else { return }
+
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            let sub = subs.remove(at: subIndex)
+            subs.insert(sub, at: subIndex - 1)
+            accounts[accIndex].subAccounts = subs
+        }
+
+        let ids = subs.map { $0.id }
+        do {
+            try await AccountService.shared.reorderSubAccounts(accountId: accountId, subAccountIds: ids)
+        } catch {
+            errorMessage = error.localizedDescription
+            await load()
+        }
+    }
+
+    func moveSubAccountDown(accountId: String, subIndex: Int) async {
+        guard let accIndex = accounts.firstIndex(where: { $0.id == accountId }),
+              var subs = accounts[accIndex].subAccounts,
+              subIndex >= 0 && subIndex < subs.count - 1 else { return }
+
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            let sub = subs.remove(at: subIndex)
+            subs.insert(sub, at: subIndex + 1)
+            accounts[accIndex].subAccounts = subs
+        }
+
+        let ids = subs.map { $0.id }
+        do {
+            try await AccountService.shared.reorderSubAccounts(accountId: accountId, subAccountIds: ids)
+        } catch {
+            errorMessage = error.localizedDescription
+            await load()
+        }
+    }
+
     func deleteAccount(id: String) async {
         withAnimation(.easeInOut(duration: 0.25)) {
             accounts.removeAll { $0.id == id }
@@ -72,6 +142,7 @@ enum AccountModalSheet: Identifiable {
 struct AccountsView: View {
     @State private var viewModel = AccountsViewModel()
     @State private var activeSheet: AccountModalSheet? = nil
+    @State private var isReordering = false
 
     @State private var accountToDelete: AccountResponse? = nil
     @State private var showDeleteAccountConfirmation = false
@@ -96,6 +167,27 @@ struct AccountsView: View {
                     Spacer()
 
                     HStack(spacing: 8) {
+                        // Reorder toggle
+                        if viewModel.accounts.count > 1 || viewModel.accounts.contains(where: { ($0.subAccounts?.count ?? 0) > 1 }) {
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    isReordering.toggle()
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: isReordering ? "checkmark" : "arrow.up.arrow.down")
+                                        .font(.system(size: 11, weight: .bold))
+                                    Text(isReordering ? L10n.Accounts.doneReordering : L10n.Accounts.reorder)
+                                        .font(.caption.weight(.bold))
+                                }
+                                .foregroundColor(isReordering ? Color(hex: "a78bfa") : Color.white.opacity(0.8))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(isReordering ? Color(hex: "a78bfa").opacity(0.18) : Color.white.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+
                         // Buy/Add Asset button
                         Button {
                             activeSheet = .addAsset(accountId: nil, subAccountId: nil)
@@ -150,6 +242,29 @@ struct AccountsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
 
+                // Reorder Help Banner
+                if isReordering {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(hex: "818cf8"))
+                        Text(L10n.Accounts.reorderHelp)
+                            .font(.caption)
+                            .foregroundColor(Color.white.opacity(0.85))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(hex: "818cf8").opacity(0.12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color(hex: "818cf8").opacity(0.25), lineWidth: 1)
+                            )
+                    )
+                }
+
                 // Content
                 if viewModel.isLoading && viewModel.accounts.isEmpty {
                     ProgressView().tint(Color(hex: "a78bfa")).padding(.vertical, 40)
@@ -170,7 +285,7 @@ struct AccountsView: View {
                     .padding(.vertical, 60)
                 } else {
                     LazyVStack(spacing: 16) {
-                        ForEach(viewModel.accounts) { account in
+                        ForEach(Array(viewModel.accounts.enumerated()), id: \.element.id) { index, account in
                             AccountCardView(
                                 account: account,
                                 onEdit: {
@@ -195,6 +310,21 @@ struct AccountsView: View {
                                 },
                                 onAddAssetToSubAccount: { sub in
                                     activeSheet = .addAsset(accountId: account.id, subAccountId: sub.id)
+                                },
+                                isReordering: isReordering,
+                                canMoveUp: index > 0,
+                                canMoveDown: index < viewModel.accounts.count - 1,
+                                onMoveUp: {
+                                    Task { await viewModel.moveAccountUp(index: index) }
+                                },
+                                onMoveDown: {
+                                    Task { await viewModel.moveAccountDown(index: index) }
+                                },
+                                onMoveSubAccountUp: { sub, subIndex in
+                                    Task { await viewModel.moveSubAccountUp(accountId: account.id, subIndex: subIndex) }
+                                },
+                                onMoveSubAccountDown: { sub, subIndex in
+                                    Task { await viewModel.moveSubAccountDown(accountId: account.id, subIndex: subIndex) }
                                 }
                             )
                         }

@@ -62,7 +62,7 @@ struct AccountResponse: Decodable, Identifiable {
     let balance: Double?
     let holdingsValue: Double?
     let totalValue: Double
-    let subAccounts: [SubAccountResponse]?
+    var subAccounts: [SubAccountResponse]?
     let isArchived: Bool?
     let sortOrder: Int?
     let createdAtUtc: String?
@@ -154,5 +154,22 @@ struct UpdateSubAccountPayload: Encodable {
         self.currencyCode = currencyCode
         self.description = description
         self.balance = balance
+    }
+}
+
+
+struct ReorderAccountsPayload: Encodable {
+    let accountIds: [String]
+
+    init(accountIds: [String]) {
+        self.accountIds = accountIds
+    }
+}
+
+struct ReorderSubAccountsPayload: Encodable {
+    let subAccountIds: [String]
+
+    init(subAccountIds: [String]) {
+        self.subAccountIds = subAccountIds
     }
 }

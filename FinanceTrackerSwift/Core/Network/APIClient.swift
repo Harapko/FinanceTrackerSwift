@@ -137,6 +137,9 @@ actor APIClient {
     func post<T: Decodable>(_ path: String, body: (any Encodable)? = nil, params: [String: String]? = nil) async throws -> T {
         try await request(path: path, method: "POST", body: body, params: params)
     }
+    func postVoid(_ path: String, body: (any Encodable)? = nil) async throws {
+        try await requestVoid(path: path, method: "POST", body: body)
+    }
     func put<T: Decodable>(_ path: String, body: (any Encodable)? = nil, params: [String: String]? = nil) async throws -> T {
         try await request(path: path, method: "PUT", body: body, params: params)
     }

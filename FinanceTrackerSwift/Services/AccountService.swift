@@ -35,4 +35,12 @@ struct AccountService {
     func deleteSubAccount(accountId: String, subAccountId: String) async throws {
         try await APIClient.shared.delete("/api/accounts/\(accountId)/subaccounts/\(subAccountId)")
     }
+
+    func reorderAccounts(accountIds: [String]) async throws {
+        try await APIClient.shared.postVoid("/api/accounts/reorder", body: ReorderAccountsPayload(accountIds: accountIds))
+    }
+
+    func reorderSubAccounts(accountId: String, subAccountIds: [String]) async throws {
+        try await APIClient.shared.postVoid("/api/accounts/\(accountId)/subaccounts/reorder", body: ReorderSubAccountsPayload(subAccountIds: subAccountIds))
+    }
 }
