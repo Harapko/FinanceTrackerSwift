@@ -286,7 +286,8 @@ struct AddAccountView: View {
 
         do {
             if let acc = editingAccount {
-                let isBalanceModified = parsedBalance != nil && abs((parsedBalance ?? 0) - acc.balance) >= 0.01
+                let hasSubAccounts = (acc.subAccounts.isEmpty == false)
+                let isBalanceModified = !hasSubAccounts && parsedBalance != nil && abs((parsedBalance ?? 0) - acc.balance) >= 0.01
                 let payload = UpdateAccountPayload(
                     name: trimmedName,
                     type: type.rawValue,

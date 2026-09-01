@@ -240,6 +240,7 @@ public enum L10n {
         public static var initialBalance: String { isUk ? "Початковий баланс" : "Initial Balance" }
         public static var currentBalance: String { isUk ? "Поточний залишок" : "Current Cash Balance" }
         public static var balanceAdjustmentHint: String { isUk ? "Зміна цього значення автоматично створить коригувальну транзакцію." : "Changing this value will automatically create a balance adjustment transaction." }
+        public static var parentAccountBalanceManagedBySubs: String { isUk ? "Баланс автоматично обчислюється із субрахунків. Редагуйте баланс кожного субрахунку окремо." : "Balance is calculated automatically from sub-accounts. Edit individual sub-account balances to adjust." }
         public static var subAccountType: String { isUk ? "Тип субрахунку" : "Sub-Account Type" }
         public static var typeBankAccount: String { isUk ? "Банківський рахунок" : "Bank Account" }
         public static var typeCreditCard: String { isUk ? "Кредитна картка" : "Credit Card" }
