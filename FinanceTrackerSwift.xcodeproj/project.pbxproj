@@ -11,6 +11,7 @@
 		0714FA911862464EADEC5B26 /* Services/SavingsGoalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A990233F054A41800E2452 /* Services/SavingsGoalService.swift */; };
 		0B54CA26E76248B3A8275353 /* Views/Dashboard/RecentTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACE67DBD5CB4AE3B39D874B /* Views/Dashboard/RecentTransactionsView.swift */; };
 		0C033A5FFD3840519A39F51B /* Views/Accounts/AddAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333376E4447E4399952EF9D0 /* Views/Accounts/AddAssetView.swift */; };
+0C033A5FFD3840519A39F51C /* Views/Accounts/EditAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333376E4447E4399952EF9D1 /* Views/Accounts/EditAssetView.swift */; };
 		0F263D38F84F4B6184B0F520 /* Views/Savings/ContributeToGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4134D82D0AEF4803A7DC3880 /* Views/Savings/ContributeToGoalView.swift */; };
 		144DBF51EE7E4609B559A442 /* Services/HoldingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFCF266F91E4AB7BBDE5472 /* Services/HoldingService.swift */; };
 		174657CF74AC427ABB4B3D7E /* Views/Analytics/AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5E2D1E467A4D19854B4F2F /* Views/Analytics/AnalyticsView.swift */; };
@@ -63,6 +64,7 @@
 		29A746E8153145EAB58DE2A6 /* Core/Extensions/Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Core/Extensions/Color+Hex.swift"; sourceTree = "<group>"; };
 		29A990233F054A41800E2452 /* Services/SavingsGoalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SavingsGoalService.swift; sourceTree = "<group>"; };
 		333376E4447E4399952EF9D0 /* Views/Accounts/AddAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Accounts/AddAssetView.swift; sourceTree = "<group>"; };
+333376E4447E4399952EF9D1 /* Views/Accounts/EditAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Accounts/EditAssetView.swift; sourceTree = "<group>"; };
 		3568CBCB171C469DA82D7AD1 /* Views/Savings/AddSavingsGoalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Savings/AddSavingsGoalView.swift; sourceTree = "<group>"; };
 		3AB2144DAD90441BACD88FEC /* Views/Transactions/TransactionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Transactions/TransactionRowView.swift; sourceTree = "<group>"; };
 		3DC49DE0592E4833AAB435C6 /* Core/Auth/AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Auth/AuthManager.swift; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 				5EFCF266F91E4AB7BBDE5472 /* Services/HoldingService.swift */,
 				797FD1D88D5A45DDBAAEE2B4 /* Views/Accounts/AddSubAccountView.swift */,
 				333376E4447E4399952EF9D0 /* Views/Accounts/AddAssetView.swift */,
+333376E4447E4399952EF9D1 /* Views/Accounts/EditAssetView.swift */,
 				226E651CD48B47A196F55A90 /* App/ContentView.swift */,
 				A2EDC5A3F61E4A928CA357AE /* App/FinanceTrackerSwiftApp.swift */,
 				3DC49DE0592E4833AAB435C6 /* Core/Auth/AuthManager.swift */,
@@ -250,6 +253,7 @@
 				D5C8252856A243D3A2EC29EF /* Views/Auth/UserProfileSheet.swift in Sources */,
 				852B63C4592043BEB318E052 /* Views/Savings/ManageGoalAllocationsView.swift in Sources */,
 				0C033A5FFD3840519A39F51B /* Views/Accounts/AddAssetView.swift in Sources */,
+0C033A5FFD3840519A39F51C /* Views/Accounts/EditAssetView.swift in Sources */,
 				D2C96EE603BE44BB9305ADCA /* Views/Accounts/AddSubAccountView.swift in Sources */,
 				144DBF51EE7E4609B559A442 /* Services/HoldingService.swift in Sources */,
 				3B62B8C0711545B6B3E22821 /* Models/HoldingModels.swift in Sources */,

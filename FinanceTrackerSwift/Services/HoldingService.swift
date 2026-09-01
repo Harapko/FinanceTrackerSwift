@@ -12,6 +12,14 @@ struct HoldingService {
         try await APIClient.shared.get("/api/holdings/sub-accounts/\(subAccountId)")
     }
 
+    func getHoldingById(id: String) async throws -> HoldingResponse {
+        try await APIClient.shared.get("/api/holdings/\(id)")
+    }
+
+    func updateHolding(id: String, payload: UpdateHoldingPayload) async throws -> HoldingResponse {
+        try await APIClient.shared.put("/api/holdings/\(id)", body: payload)
+    }
+
     func deleteHolding(id: String) async throws {
         try await APIClient.shared.delete("/api/holdings/\(id)")
     }

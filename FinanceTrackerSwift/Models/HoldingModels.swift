@@ -19,6 +19,7 @@ struct HoldingResponse: Decodable, Identifiable {
     let accountName: String?
     let convertedMarketValue: Double?
     let targetCurrencyCode: String?
+    let notes: String?
 }
 
 struct InstrumentResponse: Decodable, Identifiable {
@@ -64,4 +65,12 @@ struct CreateInstrumentTransactionPayload: Encodable {
     let date: String?
     let time: String?
     let notes: String?
+}
+
+struct UpdateHoldingPayload: Encodable {
+    let quantity: Double
+    let averageBuyPrice: Double
+    let subAccountId: String?
+    let notes: String?
+    let customName: String?
 }

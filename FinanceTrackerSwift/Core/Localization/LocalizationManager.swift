@@ -458,6 +458,11 @@ public enum L10n {
         public static var notesPlaceholder: String { isUk ? "Примітки до угоди..." : "Trade notes or strategy..." }
         public static var cashAmount: String { isUk ? "Сума готівки" : "Cash Amount" }
         public static var quickAssets: String { isUk ? "Популярні активи" : "Popular Assets" }
+        public static var editAssetTitle: String { isUk ? "Редагувати актив" : "Edit Asset" }
+        public static var editAssetSubtitle: String { isUk ? "Зміна кількості, середньої ціни, опису та портфеля" : "Update quantity, cost basis, notes, and portfolio" }
+        public static var assetName: String { isUk ? "Назва активу" : "Asset Name" }
+        public static var avgBuyPrice: String { isUk ? "Сер. ціна купівлі" : "Average Buy Price" }
+        public static var holdingUpdated: String { isUk ? "Актив успішно оновлено!" : "Asset updated successfully!" }
     }
 
     // MARK: - Analytics

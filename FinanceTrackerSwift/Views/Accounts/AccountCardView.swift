@@ -9,40 +9,54 @@ struct AccountCardView: View {
     var onEditSubAccount: (SubAccountResponse) -> Void = { _ in }
     var onDeleteSubAccount: (SubAccountResponse) -> Void = { _ in }
     var onAddAssetToSubAccount: (SubAccountResponse) -> Void = { _ in }
+
     var isReordering: Bool = false
     var canMoveUp: Bool = false
     var canMoveDown: Bool = false
     var onMoveUp: () -> Void = {}
     var onMoveDown: () -> Void = {}
+
     var onMoveSubAccountUp: (SubAccountResponse, Int) -> Void = { _, _ in }
     var onMoveSubAccountDown: (SubAccountResponse, Int) -> Void = { _, _ in }
 
     @State private var isExpanded = true
     @State private var holdings: [HoldingResponse] = []
     @State private var isLoadingHoldings = false
+    @State private var editingHolding: HoldingResponse? = nil
 
-    var accentColor: Color {
-        Color(hex: account.color ?? "#818cf8")
+    private var directHoldings: [HoldingResponse] {
+        holdings.filter { $0.subAccountId == nil }
+    }
+
+    private var accentColor: Color {
+        if let hex = account.color, !hex.isEmpty {
+            return Color(hex: hex)
+        }
+        switch account.type {
+        case .bankAccount: return Color(hex: "60a5fa")
+        case .cryptoWallet: return Color(hex: "f59e0b")
+        case .investmentAccount: return Color(hex: "a78bfa")
+        case .creditCard: return Color(hex: "f87171")
+        default: return Color(hex: "818cf8")
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header: Avatar, Name, Type, Actions
+        VStack(alignment: .leading, spacing: 14) {
+            // Header Row
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(accentColor.opacity(0.18))
-                        .frame(width: 44, height: 44)
-                    Image(systemName: account.type.icon)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(accentColor)
-                }
+                // Icon
+                Image(systemName: account.icon ?? account.type.icon)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(accentColor)
+                    .frame(width: 40, height: 40)
+                    .background(accentColor.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(account.name)
                         .font(.headline.bold())
                         .foregroundColor(.white)
-                        .lineLimit(1)
                     Text("\(account.type.displayName) • \(account.currencyCode)")
                         .font(.caption)
                         .foregroundColor(Color.white.opacity(0.5))
@@ -50,17 +64,16 @@ struct AccountCardView: View {
 
                 Spacer()
 
-                // Action buttons
                 if isReordering {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Button {
                             onMoveUp()
                         } label: {
                             Image(systemName: "arrow.up")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(canMoveUp ? accentColor : Color.white.opacity(0.2))
-                                .frame(width: 32, height: 32)
-                                .background(accentColor.opacity(canMoveUp ? 0.18 : 0.05))
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(canMoveUp ? Color(hex: "818cf8") : Color.white.opacity(0.2))
+                                .frame(width: 28, height: 28)
+                                .background(Color(hex: "818cf8").opacity(canMoveUp ? 0.15 : 0.05))
                                 .clipShape(Circle())
                         }
                         .disabled(!canMoveUp)
@@ -69,10 +82,10 @@ struct AccountCardView: View {
                             onMoveDown()
                         } label: {
                             Image(systemName: "arrow.down")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(canMoveDown ? accentColor : Color.white.opacity(0.2))
-                                .frame(width: 32, height: 32)
-                                .background(accentColor.opacity(canMoveDown ? 0.18 : 0.05))
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(canMoveDown ? Color(hex: "818cf8") : Color.white.opacity(0.2))
+                                .frame(width: 28, height: 28)
+                                .background(Color(hex: "818cf8").opacity(canMoveDown ? 0.15 : 0.05))
                                 .clipShape(Circle())
                         }
                         .disabled(!canMoveDown)
@@ -175,9 +188,12 @@ struct AccountCardView: View {
 
             // Direct Account Holdings (Stock & Crypto)
             AccountHoldingsSection(
-                holdings: holdings,
+                holdings: directHoldings,
                 currencyCode: account.currencyCode,
                 isLoading: isLoadingHoldings,
+                onEditHolding: { holding in
+                    editingHolding = holding
+                },
                 onDeleteHolding: { holdingId in
                     Task {
                         try? await HoldingService.shared.deleteHolding(id: holdingId)
@@ -223,6 +239,7 @@ struct AccountCardView: View {
                             ForEach(Array(account.subAccountsList.enumerated()), id: \.element.id) { subIndex, sub in
                                 SubAccountCardRow(
                                     subAccount: sub,
+                                    account: account,
                                     onEdit: { onEditSubAccount(sub) },
                                     onDelete: { onDeleteSubAccount(sub) },
                                     onAddAsset: { onAddAssetToSubAccount(sub) },
@@ -246,6 +263,15 @@ struct AccountCardView: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(accentColor.opacity(0.35), lineWidth: 1.5)
         )
+        .sheet(item: $editingHolding) { holding in
+            EditAssetView(
+                holding: holding,
+                accounts: [account],
+                onSuccess: {
+                    Task { await loadHoldings() }
+                }
+            )
+        }
         .task {
             await loadHoldings()
         }
@@ -265,9 +291,11 @@ struct AccountCardView: View {
 // MARK: - Sub Account Row
 struct SubAccountCardRow: View {
     let subAccount: SubAccountResponse
+    var account: AccountResponse? = nil
     var onEdit: () -> Void = {}
     var onDelete: () -> Void = {}
     var onAddAsset: () -> Void = {}
+
     var isReordering: Bool = false
     var canMoveUp: Bool = false
     var canMoveDown: Bool = false
@@ -275,37 +303,33 @@ struct SubAccountCardRow: View {
     var onMoveDown: () -> Void = {}
 
     @State private var holdings: [HoldingResponse] = []
-    @State private var isExpanded = false
     @State private var isLoadingHoldings = false
+    @State private var editingHolding: HoldingResponse? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(subAccount.name)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.white)
-                        Text(subAccount.type.displayName)
-                            .font(.system(size: 10, weight: .bold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Capsule())
-                            .foregroundColor(Color.white.opacity(0.7))
-                    }
-                    if let desc = subAccount.description, !desc.isEmpty {
-                        Text(desc)
-                            .font(.caption2)
-                            .foregroundColor(Color.white.opacity(0.4))
-                    }
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "a78bfa"))
+                    .frame(width: 28, height: 28)
+                    .background(Color(hex: "a78bfa").opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(subAccount.name)
+                        .font(.subheadline.bold())
+                        .foregroundColor(.white)
+                    Text("\(subAccount.type.displayName) • \(subAccount.currencyCode)")
+                        .font(.caption2)
+                        .foregroundColor(Color.white.opacity(0.4))
                 }
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 1) {
                     Text(subAccount.totalValue.formatted(currencyCode: subAccount.currencyCode))
-                        .font(.subheadline.weight(.bold))
+                        .font(.subheadline.bold())
                         .foregroundColor(.white)
 
                     if (subAccount.holdingsValue ?? 0) > 0 {
@@ -376,6 +400,9 @@ struct SubAccountCardRow: View {
                 holdings: holdings,
                 currencyCode: subAccount.currencyCode,
                 isLoading: isLoadingHoldings,
+                onEditHolding: { holding in
+                    editingHolding = holding
+                },
                 onDeleteHolding: { holdingId in
                     Task {
                         try? await HoldingService.shared.deleteHolding(id: holdingId)
@@ -388,6 +415,15 @@ struct SubAccountCardRow: View {
         .background(Color.white.opacity(0.03))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.04), lineWidth: 1))
+        .sheet(item: $editingHolding) { holding in
+            EditAssetView(
+                holding: holding,
+                accounts: account != nil ? [account!] : [],
+                onSuccess: {
+                    Task { await loadHoldings() }
+                }
+            )
+        }
         .task {
             await loadHoldings()
         }
@@ -409,6 +445,7 @@ struct AccountHoldingsSection: View {
     let holdings: [HoldingResponse]
     let currencyCode: String
     let isLoading: Bool
+    var onEditHolding: (HoldingResponse) -> Void = { _ in }
     var onDeleteHolding: (String) -> Void = { _ in }
 
     var body: some View {
@@ -449,6 +486,12 @@ struct AccountHoldingsSection: View {
                                 Text("\(formatQty(h.quantity)) @ \(h.averageBuyPrice.formatted(currencyCode: h.currencyCode))")
                                     .font(.system(size: 10))
                                     .foregroundColor(Color.white.opacity(0.4))
+                                if let notes = h.notes, !notes.isEmpty {
+                                    Text(notes)
+                                        .font(.system(size: 9))
+                                        .foregroundColor(Color.white.opacity(0.35))
+                                        .lineLimit(1)
+                                }
                             }
 
                             Spacer()
@@ -464,6 +507,15 @@ struct AccountHoldingsSection: View {
                                         .font(.system(size: 9, weight: .bold))
                                 }
                                 .foregroundColor(isGain ? Color(hex: "34d399") : Color(hex: "f87171"))
+                            }
+
+                            Button {
+                                onEditHolding(h)
+                            } label: {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color(hex: "818cf8"))
+                                    .padding(4)
                             }
 
                             Button {
