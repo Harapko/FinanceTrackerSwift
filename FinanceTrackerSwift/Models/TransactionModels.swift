@@ -62,6 +62,8 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
     let subAccountName: String?
     let categoryId: String?
     let categoryName: String?
+    let categoryIcon: String?
+    let categoryColor: String?
     let type: TransactionType
     let amount: Double
     let currencyCode: String
@@ -73,11 +75,18 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
     let location: String?
     let tags: [TagResponse]?
     let createdAtUtc: String?
+    let transferDestAccountId: String?
+    let transferDestAccountName: String?
+    let transferDestSubAccountId: String?
+    let transferDestSubAccountName: String?
 
     enum CodingKeys: String, CodingKey {
         case id, accountId, accountName, subAccountId, subAccountName
-        case categoryId, categoryName, type, amount, currencyCode, exchangeRate
+        case categoryId, categoryName, categoryIcon, categoryColor
+        case type, amount, currencyCode, exchangeRate
         case description, date, time, payee, location, tags, createdAtUtc
+        case transferDestAccountId, transferDestAccountName
+        case transferDestSubAccountId, transferDestSubAccountName
     }
 
     init(
@@ -88,6 +97,8 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
         subAccountName: String? = nil,
         categoryId: String? = nil,
         categoryName: String? = nil,
+        categoryIcon: String? = nil,
+        categoryColor: String? = nil,
         type: TransactionType = .expense,
         amount: Double,
         currencyCode: String = "USD",
@@ -98,7 +109,11 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
         payee: String? = nil,
         location: String? = nil,
         tags: [TagResponse]? = nil,
-        createdAtUtc: String? = nil
+        createdAtUtc: String? = nil,
+        transferDestAccountId: String? = nil,
+        transferDestAccountName: String? = nil,
+        transferDestSubAccountId: String? = nil,
+        transferDestSubAccountName: String? = nil
     ) {
         self.id = id
         self.accountId = accountId
@@ -107,6 +122,8 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
         self.subAccountName = subAccountName
         self.categoryId = categoryId
         self.categoryName = categoryName
+        self.categoryIcon = categoryIcon
+        self.categoryColor = categoryColor
         self.type = type
         self.amount = amount
         self.currencyCode = currencyCode
@@ -118,6 +135,10 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
         self.location = location
         self.tags = tags
         self.createdAtUtc = createdAtUtc
+        self.transferDestAccountId = transferDestAccountId
+        self.transferDestAccountName = transferDestAccountName
+        self.transferDestSubAccountId = transferDestSubAccountId
+        self.transferDestSubAccountName = transferDestSubAccountName
     }
 
     init(from decoder: Decoder) throws {
@@ -129,6 +150,8 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
         subAccountName = try? container.decode(String.self, forKey: .subAccountName)
         categoryId = try? container.decode(String.self, forKey: .categoryId)
         categoryName = try? container.decode(String.self, forKey: .categoryName)
+        categoryIcon = try? container.decode(String.self, forKey: .categoryIcon)
+        categoryColor = try? container.decode(String.self, forKey: .categoryColor)
 
         if let t = try? container.decode(TransactionType.self, forKey: .type) {
             type = t
@@ -148,6 +171,10 @@ struct TransactionResponse: Decodable, Identifiable, Hashable {
         location = try? container.decode(String.self, forKey: .location)
         tags = try? container.decode([TagResponse].self, forKey: .tags)
         createdAtUtc = try? container.decode(String.self, forKey: .createdAtUtc)
+        transferDestAccountId = try? container.decode(String.self, forKey: .transferDestAccountId)
+        transferDestAccountName = try? container.decode(String.self, forKey: .transferDestAccountName)
+        transferDestSubAccountId = try? container.decode(String.self, forKey: .transferDestSubAccountId)
+        transferDestSubAccountName = try? container.decode(String.self, forKey: .transferDestSubAccountName)
     }
 }
 
@@ -247,6 +274,52 @@ struct CreateTransferPayload: Encodable {
         self.description = description
         self.date = date
         self.payee = payee
+    }
+}
+
+struct UpdateTransactionPayload: Encodable {
+    let accountId: String?
+    let subAccountId: String?
+    let categoryId: String?
+    let type: String?
+    let amount: Double?
+    let currencyCode: String?
+    let exchangeRate: Double?
+    let description: String?
+    let date: String?
+    let time: String?
+    let payee: String?
+    let transferDestAccountId: String?
+    let transferDestSubAccountId: String?
+
+    init(
+        accountId: String? = nil,
+        subAccountId: String? = nil,
+        categoryId: String? = nil,
+        type: String? = nil,
+        amount: Double? = nil,
+        currencyCode: String? = nil,
+        exchangeRate: Double? = nil,
+        description: String? = nil,
+        date: String? = nil,
+        time: String? = nil,
+        payee: String? = nil,
+        transferDestAccountId: String? = nil,
+        transferDestSubAccountId: String? = nil
+    ) {
+        self.accountId = accountId
+        self.subAccountId = subAccountId
+        self.categoryId = categoryId
+        self.type = type
+        self.amount = amount
+        self.currencyCode = currencyCode
+        self.exchangeRate = exchangeRate
+        self.description = description
+        self.date = date
+        self.time = time
+        self.payee = payee
+        self.transferDestAccountId = transferDestAccountId
+        self.transferDestSubAccountId = transferDestSubAccountId
     }
 }
 

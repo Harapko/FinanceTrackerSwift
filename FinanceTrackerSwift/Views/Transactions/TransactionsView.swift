@@ -558,6 +558,8 @@ struct CategoryTransactionsSheet: View {
     @State private var errorMessage: String?
     @State private var transactionToDelete: TransactionResponse?
     @State private var showDeleteConfirmation: Bool = false
+    @State private var transactionToEdit: TransactionResponse?
+    @State private var showEditTransaction: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -621,10 +623,17 @@ struct CategoryTransactionsSheet: View {
                             // Transactions List
                             VStack(spacing: 0) {
                                 ForEach(transactions) { tx in
-                                    SwipeableTransactionRow(transaction: tx) {
-                                        transactionToDelete = tx
-                                        showDeleteConfirmation = true
-                                    }
+                                    SwipeableTransactionRow(
+                                        transaction: tx,
+                                        onEdit: {
+                                            transactionToEdit = tx
+                                            showEditTransaction = true
+                                        },
+                                        onDelete: {
+                                            transactionToDelete = tx
+                                            showDeleteConfirmation = true
+                                        }
+                                    )
 
                                     if tx.id != transactions.last?.id {
                                         Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 16)
@@ -662,6 +671,13 @@ struct CategoryTransactionsSheet: View {
             }
             .task {
                 await loadCategoryTransactions()
+            }
+            .sheet(isPresented: $showEditTransaction) {
+                if let editTx = transactionToEdit {
+                    AddTransactionView(initialType: editTx.type, transactionToEdit: editTx) {
+                        Task { await loadCategoryTransactions() }
+                    }
+                }
             }
         }
     }
@@ -992,6 +1008,7 @@ final class TransactionsViewModel {
 struct TransactionsView: View {
     @State private var viewModel = TransactionsViewModel()
     @State private var showAddTransaction = false
+    @State private var transactionToEdit: TransactionResponse? = nil
     @State private var initialAddType: TransactionType = .expense
     @State private var showAddCategory = false
     @State private var showDatePicker = false
@@ -1046,9 +1063,10 @@ struct TransactionsView: View {
             await viewModel.loadAll(isManualRefresh: true)
         }
         .sheet(isPresented: $showAddTransaction, onDismiss: {
+            transactionToEdit = nil
             Task { await viewModel.loadAll(isManualRefresh: true) }
         }) {
-            AddTransactionView(initialType: initialAddType) {
+            AddTransactionView(initialType: initialAddType, initialDate: viewModel.anchorDate, transactionToEdit: transactionToEdit) {
                 Task { await viewModel.loadAll(isManualRefresh: true) }
             }
         }
@@ -1427,10 +1445,18 @@ struct TransactionsView: View {
                             // Transactions in group
                             VStack(spacing: 0) {
                                 ForEach(group.transactions) { tx in
-                                    SwipeableTransactionRow(transaction: tx) {
-                                        transactionToDelete = tx
-                                        showDeleteConfirmation = true
-                                    }
+                                    SwipeableTransactionRow(
+                                        transaction: tx,
+                                        onEdit: {
+                                            transactionToEdit = tx
+                                            initialAddType = tx.type
+                                            showAddTransaction = true
+                                        },
+                                        onDelete: {
+                                            transactionToDelete = tx
+                                            showDeleteConfirmation = true
+                                        }
+                                    )
 
                                     if tx.id != group.transactions.last?.id {
                                         Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 16)
@@ -1491,6 +1517,7 @@ struct TransactionsView: View {
 // MARK: - Swipeable Transaction Row
 struct SwipeableTransactionRow: View {
     let transaction: TransactionResponse
+    var onEdit: (() -> Void)? = nil
     let onDelete: () -> Void
 
     @State private var offset: CGFloat = 0
@@ -1517,7 +1544,7 @@ struct SwipeableTransactionRow: View {
                 .padding(.trailing, 8)
             }
 
-            TransactionRowView(transaction: transaction, onDelete: onDelete)
+            TransactionRowView(transaction: transaction, onEdit: onEdit, onDelete: onDelete)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(Color(hex: "161b22"))

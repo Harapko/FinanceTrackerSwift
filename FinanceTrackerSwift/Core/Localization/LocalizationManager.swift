@@ -311,6 +311,7 @@ public enum L10n {
         public static var title: String { isUk ? "Транзакції" : "Transactions" }
         public static var subtitle: String { isUk ? "Відстежуйте, шукайте та керуйте доходами, витратами та переказами." : "Track, search, and manage all your income, expense, and transfer records." }
         public static var newTransaction: String { isUk ? "Нова транзакція" : "New Transaction" }
+        public static var editTransaction: String { isUk ? "Редагувати транзакцію" : "Edit Transaction" }
         public static var transferFunds: String { isUk ? "Переказ коштів" : "Transfer Funds" }
         public static var newCategory: String { isUk ? "Нова категорія" : "New Category" }
         public static var modalCreateTitle: String { isUk ? "Нова категорія" : "New Category" }

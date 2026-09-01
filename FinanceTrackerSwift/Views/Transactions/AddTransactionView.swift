@@ -3,7 +3,11 @@ import SwiftUI
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     var initialType: TransactionType = .expense
+    var initialDate: Date? = nil
+    var transactionToEdit: TransactionResponse? = nil
     var onSuccess: () -> Void = {}
+
+    var isEditing: Bool { transactionToEdit != nil }
 
     @State private var transactionType: TransactionType = .expense
     @State private var amount: String = ""
@@ -358,7 +362,38 @@ struct AddTransactionView: View {
                 Button("Cancel", role: .cancel) { newTagText = "" }
             }
             .task {
-                transactionType = initialType
+                if let tx = transactionToEdit {
+                    transactionType = tx.type
+                    amount = String(tx.amount)
+                    currencyCode = tx.currencyCode
+                    selectedAccountId = tx.accountId
+                    selectedSubAccountId = tx.subAccountId ?? ""
+                    selectedCategoryId = tx.categoryId ?? ""
+                    comment = tx.description ?? ""
+                    destAccountId = tx.transferDestAccountId ?? ""
+                    destSubAccountId = tx.transferDestSubAccountId ?? ""
+                    let f = DateFormatter()
+                    f.dateFormat = "yyyy-MM-dd"
+                    if let d = f.date(from: tx.date) {
+                        customDate = d
+                        selectedDateOption = 3
+                    }
+                } else {
+                    transactionType = initialType
+                    if let initDate = initialDate {
+                        let cal = Calendar.current
+                        customDate = initDate
+                        if cal.isDateInToday(initDate) {
+                            selectedDateOption = 0
+                        } else if cal.isDateInYesterday(initDate) {
+                            selectedDateOption = 1
+                        } else if let twoDaysAgo = cal.date(byAdding: .day, value: -2, to: Date()), cal.isDate(initDate, inSameDayAs: twoDaysAgo) {
+                            selectedDateOption = 2
+                        } else {
+                            selectedDateOption = 3
+                        }
+                    }
+                }
                 do {
                     accounts = try await AccountService.shared.getAccounts()
                     if selectedAccountId.isEmpty, let first = accounts.first {
@@ -369,7 +404,9 @@ struct AddTransactionView: View {
                         destAccountId = accounts[1].id
                     }
                     categories = try await CategoryService.shared.getCategories()
-                    updateSelectedCategoryForCurrentType()
+                    if !isEditing {
+                        updateSelectedCategoryForCurrentType()
+                    }
                 } catch {
                     errorMessage = error.localizedDescription
                 }
@@ -394,6 +431,9 @@ struct AddTransactionView: View {
     }
 
     private var navigationTitle: String {
+        if isEditing {
+            return L10n.Transactions.editTransaction
+        }
         switch transactionType {
         case .expense: return L10n.Transactions.modalTitle
         case .income: return L10n.Transactions.modalTitle
@@ -410,6 +450,9 @@ struct AddTransactionView: View {
     }
 
     private var actionButtonTitle: String {
+        if isEditing {
+            return L10n.Common.save
+        }
         switch transactionType {
         case .expense: return "\(L10n.Transactions.add) \(L10n.Transactions.typeExpense)"
         case .income: return "\(L10n.Transactions.add) \(L10n.Transactions.typeIncome)"
@@ -820,10 +863,61 @@ struct AddTransactionView: View {
         timeFormatter.dateFormat = "HH:mm:ss"
         let currentTimeString = timeFormatter.string(from: Date())
 
+        if let editTx = transactionToEdit {
+            await saveEdit(editTx: editTx, amount: amt, timeStr: currentTimeString)
+            return
+        }
+
         if transactionType == .transfer {
             await saveTransfer(amount: amt, timeStr: currentTimeString)
         } else {
             await saveStandard(amount: amt, timeStr: currentTimeString)
+        }
+    }
+
+    private func saveEdit(editTx: TransactionResponse, amount: Double, timeStr: String) async {
+        guard !selectedAccountId.isEmpty else {
+            errorMessage = "Please select an account."
+            return
+        }
+
+        if transactionType == .transfer {
+            guard !destAccountId.isEmpty else {
+                errorMessage = "Please select a destination account."
+                return
+            }
+            if selectedAccountId == destAccountId && selectedSubAccountId == destSubAccountId {
+                errorMessage = "Source and destination accounts cannot be identical."
+                return
+            }
+        }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        let payload = UpdateTransactionPayload(
+            accountId: selectedAccountId,
+            subAccountId: selectedSubAccountId.isEmpty ? nil : selectedSubAccountId,
+            categoryId: transactionType == .transfer ? nil : (selectedCategoryId.isEmpty ? nil : selectedCategoryId),
+            type: transactionType.rawValue,
+            amount: amount,
+            currencyCode: currencyCode,
+            exchangeRate: nil,
+            description: comment.trimmingCharacters(in: .whitespaces).isEmpty ? nil : comment,
+            date: selectedDateString,
+            time: timeStr,
+            payee: nil,
+            transferDestAccountId: transactionType == .transfer ? destAccountId : nil,
+            transferDestSubAccountId: transactionType == .transfer ? (destSubAccountId.isEmpty ? nil : destSubAccountId) : nil
+        )
+
+        do {
+            let _: TransactionResponse = try await TransactionService.shared.updateTransaction(id: editTx.id, payload: payload)
+            onSuccess()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
