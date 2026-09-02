@@ -3,15 +3,32 @@ import SwiftUI
 @Observable
 class AccountsViewModel {
     var accounts: [AccountResponse] = []
+    var netWorthResponse: NetWorthResponse?
     var isLoading = false
     var isRefreshing = false
     var errorMessage: String?
+    var currentCurrency: String = "USD"
 
-    var totalNetWorth: Double {
-        accounts.reduce(0) { $0 + $1.totalValue }
+    var displayNetWorth: Double {
+        if let nw = netWorthResponse {
+            return nw.netWorth
+        }
+        return accounts.reduce(0) { $0 + $1.totalValue }
     }
 
-    func load(isManualRefresh: Bool = false) async {
+    var displayCurrency: String {
+        if let nw = netWorthResponse {
+            return nw.currencyCode
+        }
+        let common = accounts.first?.currencyCode ?? currentCurrency
+        if !accounts.isEmpty && accounts.allSatisfy({ $0.currencyCode == common }) {
+            return common
+        }
+        return currentCurrency
+    }
+
+    func load(currencyCode: String, isManualRefresh: Bool = false) async {
+        self.currentCurrency = currencyCode
         if isManualRefresh {
             isRefreshing = true
         } else if accounts.isEmpty {
@@ -22,11 +39,17 @@ class AccountsViewModel {
             isLoading = false
             isRefreshing = false
         }
+
+        async let accsTask = AccountService.shared.getAccounts()
+        async let nwTask = AnalyticsService.shared.getNetWorth(currencyCode: currencyCode)
+
         do {
-            accounts = try await AccountService.shared.getAccounts()
+            accounts = try await accsTask
         } catch {
             errorMessage = error.localizedDescription
         }
+
+        netWorthResponse = try? await nwTask
     }
 
     func moveAccountUp(index: Int) async {
@@ -40,7 +63,7 @@ class AccountsViewModel {
             try await AccountService.shared.reorderAccounts(accountIds: ids)
         } catch {
             errorMessage = error.localizedDescription
-            await load()
+            await load(currencyCode: currentCurrency)
         }
     }
 
@@ -55,7 +78,7 @@ class AccountsViewModel {
             try await AccountService.shared.reorderAccounts(accountIds: ids)
         } catch {
             errorMessage = error.localizedDescription
-            await load()
+            await load(currencyCode: currentCurrency)
         }
     }
 
@@ -75,7 +98,7 @@ class AccountsViewModel {
             try await AccountService.shared.reorderSubAccounts(accountId: accountId, subAccountIds: ids)
         } catch {
             errorMessage = error.localizedDescription
-            await load()
+            await load(currencyCode: currentCurrency)
         }
     }
 
@@ -95,7 +118,7 @@ class AccountsViewModel {
             try await AccountService.shared.reorderSubAccounts(accountId: accountId, subAccountIds: ids)
         } catch {
             errorMessage = error.localizedDescription
-            await load()
+            await load(currencyCode: currentCurrency)
         }
     }
 
@@ -105,16 +128,17 @@ class AccountsViewModel {
         }
         do {
             try await AccountService.shared.deleteAccount(id: id)
+            await load(currencyCode: currentCurrency)
         } catch {
             errorMessage = error.localizedDescription
-            await load()
+            await load(currencyCode: currentCurrency)
         }
     }
 
     func deleteSubAccount(accountId: String, subAccountId: String) async {
         do {
             try await AccountService.shared.deleteSubAccount(accountId: accountId, subAccountId: subAccountId)
-            await load()
+            await load(currencyCode: currentCurrency)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -134,15 +158,19 @@ enum AccountModalSheet: Identifiable {
         case .editAccount(let a): return "editAccount-\(a.id)"
         case .addSubAccount(let aId, _): return "addSubAccount-\(aId)"
         case .editSubAccount(let aId, _, let s): return "editSubAccount-\(aId)-\(s.id)"
-        case .addAsset(let aId, let sId): return "addAsset-\(aId ?? "")-\(sId ?? "")"
+        case .addAsset(let aId, let sId): return "addAsset-" + (aId ?? "") + "-" + (sId ?? "")
         }
     }
 }
 
 struct AccountsView: View {
+    @Environment(AuthManager.self) private var auth
     @State private var viewModel = AccountsViewModel()
     @State private var activeSheet: AccountModalSheet? = nil
     @State private var isReordering = false
+    @State private var selectedCurrency: String = "USD"
+
+    let availableCurrencies = ["USD", "EUR", "GBP", "UAH", "PLN", "JPY", "CAD", "CHF"]
 
     @State private var accountToDelete: AccountResponse? = nil
     @State private var showDeleteAccountConfirmation = false
@@ -153,19 +181,56 @@ struct AccountsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Header
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 3) {
+                // Header & Action Bar
+                VStack(alignment: .leading, spacing: 14) {
+                    // Title and Summary Row
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.Accounts.pageTitle)
                             .font(.largeTitle.bold())
                             .foregroundColor(.white)
-                        Text(L10n.Accounts.accountsSummary(count: viewModel.accounts.count, netWorth: viewModel.totalNetWorth.formatted(currencyCode: "USD")))
+
+                        HStack(spacing: 8) {
+                            Text(L10n.Accounts.accountsSummary(
+                                count: viewModel.accounts.count,
+                                netWorth: viewModel.displayNetWorth.formatted(currencyCode: viewModel.displayCurrency)
+                            ))
                             .font(.caption)
-                            .foregroundColor(Color.white.opacity(0.5))
+                            .foregroundColor(Color.white.opacity(0.6))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                            // Currency Switcher Menu Pill
+                            Menu {
+                                ForEach(availableCurrencies, id: \.self) { c in
+                                    Button {
+                                        selectedCurrency = c
+                                        Task { await viewModel.load(currencyCode: c) }
+                                    } label: {
+                                        HStack {
+                                            Text(c)
+                                            if selectedCurrency == c {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 3) {
+                                    Text(selectedCurrency)
+                                        .font(.caption2.bold())
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 8, weight: .bold))
+                                }
+                                .foregroundColor(Color(hex: "a78bfa"))
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(Color(hex: "a78bfa").opacity(0.12))
+                                .clipShape(Capsule())
+                            }
+                        }
                     }
 
-                    Spacer()
-
+                    // Action Buttons Row
                     HStack(spacing: 8) {
                         // Reorder toggle
                         if viewModel.accounts.count > 1 || viewModel.accounts.contains(where: { ($0.subAccounts?.count ?? 0) > 1 }) {
@@ -179,13 +244,15 @@ struct AccountsView: View {
                                         .font(.system(size: 11, weight: .bold))
                                     Text(isReordering ? L10n.Accounts.doneReordering : L10n.Accounts.reorder)
                                         .font(.caption.weight(.bold))
+                                        .lineLimit(1)
                                 }
-                                .foregroundColor(isReordering ? Color(hex: "a78bfa") : Color.white.opacity(0.8))
+                                .foregroundColor(isReordering ? Color(hex: "a78bfa") : Color.white.opacity(0.85))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 8)
-                                .background(isReordering ? Color(hex: "a78bfa").opacity(0.18) : Color.white.opacity(0.08))
+                                .background(isReordering ? Color(hex: "a78bfa").opacity(0.2) : Color.white.opacity(0.08))
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
+                            .fixedSize(horizontal: true, vertical: false)
                         }
 
                         // Buy/Add Asset button
@@ -197,6 +264,7 @@ struct AccountsView: View {
                                     .font(.system(size: 11, weight: .bold))
                                 Text(L10n.Accounts.addAsset)
                                     .font(.caption.weight(.bold))
+                                    .lineLimit(1)
                             }
                             .foregroundColor(Color(hex: "34d399"))
                             .padding(.horizontal, 10)
@@ -204,6 +272,9 @@ struct AccountsView: View {
                             .background(Color(hex: "34d399").opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
+                        .fixedSize(horizontal: true, vertical: false)
+
+                        Spacer()
 
                         // Add Account button
                         Button {
@@ -214,6 +285,7 @@ struct AccountsView: View {
                                     .font(.caption.weight(.bold))
                                 Text(L10n.Accounts.addAccount)
                                     .font(.caption.weight(.semibold))
+                                    .lineLimit(1)
                             }
                             .foregroundColor(.white)
                             .padding(.horizontal, 12)
@@ -226,6 +298,7 @@ struct AccountsView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
+                        .fixedSize(horizontal: true, vertical: false)
                     }
                 }
                 .padding(.horizontal, 4)
@@ -336,29 +409,29 @@ struct AccountsView: View {
         }
         .background(Color(hex: "0d1117").ignoresSafeArea())
         .refreshable {
-            await viewModel.load(isManualRefresh: true)
+            await viewModel.load(currencyCode: selectedCurrency, isManualRefresh: true)
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .addAccount:
                 AddAccountView {
-                    Task { await viewModel.load() }
+                    Task { await viewModel.load(currencyCode: selectedCurrency) }
                 }
             case .editAccount(let account):
                 AddAccountView(editingAccount: account) {
-                    Task { await viewModel.load() }
+                    Task { await viewModel.load(currencyCode: selectedCurrency) }
                 }
             case .addSubAccount(let accountId, let currency):
                 AddSubAccountView(parentAccountId: accountId, parentCurrency: currency) {
-                    Task { await viewModel.load() }
+                    Task { await viewModel.load(currencyCode: selectedCurrency) }
                 }
             case .editSubAccount(let accountId, let currency, let subAccount):
                 AddSubAccountView(parentAccountId: accountId, parentCurrency: currency, editingSubAccount: subAccount) {
-                    Task { await viewModel.load() }
+                    Task { await viewModel.load(currencyCode: selectedCurrency) }
                 }
             case .addAsset(let accountId, let subAccountId):
                 AddAssetView(defaultAccountId: accountId, defaultSubAccountId: subAccountId) {
-                    Task { await viewModel.load() }
+                    Task { await viewModel.load(currencyCode: selectedCurrency) }
                 }
             }
         }
@@ -395,7 +468,20 @@ struct AccountsView: View {
             }
         }
         .task {
-            await viewModel.load()
+            let initialCurr = auth.currentUser?.defaultCurrencyCode ?? "USD"
+            selectedCurrency = initialCurr
+            await viewModel.load(currencyCode: selectedCurrency)
+
+            if initialCurr == "USD",
+               let firstCurr = viewModel.accounts.first?.currencyCode,
+               !viewModel.accounts.isEmpty,
+               viewModel.accounts.allSatisfy({ $0.currencyCode == firstCurr }) {
+                selectedCurrency = firstCurr
+                await viewModel.load(currencyCode: selectedCurrency)
+            }
+        }
+        .onChange(of: selectedCurrency) { _, newCurrency in
+            Task { await viewModel.load(currencyCode: newCurrency) }
         }
     }
 }

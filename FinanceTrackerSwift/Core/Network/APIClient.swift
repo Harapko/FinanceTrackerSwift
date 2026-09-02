@@ -28,7 +28,7 @@ enum AppConfig {
         if let custom = UserDefaults.standard.string(forKey: "custom_api_url"), !custom.trimmingCharacters(in: .whitespaces).isEmpty {
             return custom.trimmingCharacters(in: .whitespaces)
         }
-        return ProcessInfo.processInfo.environment["API_BASE_URL"] ?? localBaseURL
+        return ProcessInfo.processInfo.environment["API_BASE_URL"] ?? remoteBaseURL
     }
 
     static func setBaseURL(_ url: String) {

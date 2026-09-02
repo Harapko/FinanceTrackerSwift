@@ -15,6 +15,10 @@ class SavingsViewModel {
         goals.reduce(0) { $0 + $1.targetAmount }
     }
 
+    var currencyCode: String {
+        goals.first?.currencyCode ?? "USD"
+    }
+
     var overallProgress: Double {
         totalTarget > 0 ? min(totalSaved / totalTarget, 1.0) : 0
     }
@@ -81,7 +85,7 @@ struct SavingsView: View {
                         Text(L10n.Savings.title)
                             .font(.largeTitle.bold())
                             .foregroundColor(.white)
-                        Text(L10n.Savings.goalsSummary(count: viewModel.goals.count, totalSaved: viewModel.totalSaved.formatted(currencyCode: "USD")))
+                        Text(L10n.Savings.goalsSummary(count: viewModel.goals.count, totalSaved: viewModel.totalSaved.formatted(currencyCode: viewModel.currencyCode)))
                             .font(.caption)
                             .foregroundColor(Color.white.opacity(0.5))
                     }
@@ -96,6 +100,7 @@ struct SavingsView: View {
                                 .font(.caption.bold())
                             Text(L10n.Savings.newGoal)
                                 .font(.caption.weight(.semibold))
+                                .lineLimit(1)
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
@@ -106,6 +111,7 @@ struct SavingsView: View {
                         ))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
+                    .fixedSize(horizontal: true, vertical: false)
                 }
                 .padding(.horizontal, 4)
 
@@ -150,11 +156,11 @@ struct SavingsView: View {
                         .frame(height: 6)
 
                         HStack {
-                            Text(viewModel.totalSaved.formatted(currencyCode: "USD"))
+                            Text(viewModel.totalSaved.formatted(currencyCode: viewModel.currencyCode))
                                 .font(.caption2.bold())
                                 .foregroundColor(.white)
                             Spacer()
-                            Text("\(L10n.Savings.target): \(viewModel.totalTarget.formatted(currencyCode: "USD"))")
+                            Text("\(L10n.Savings.target): \(viewModel.totalTarget.formatted(currencyCode: viewModel.currencyCode))")
                                 .font(.caption2)
                                 .foregroundColor(Color.white.opacity(0.5))
                         }
