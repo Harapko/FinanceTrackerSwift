@@ -22,7 +22,7 @@ enum APIError: LocalizedError {
 // MARK: - App Config
 enum AppConfig {
     static let localBaseURL = "http://localhost:5237"
-    static let remoteBaseURL = "https://financetrackerapi-8g0s.onrender.com"
+    static let remoteBaseURL = "http://gbubsjwn1jyklrh2nop8qbum.2.31.5.71.sslip.io"
 
     static var baseURL: String {
         if let custom = UserDefaults.standard.string(forKey: "custom_api_url"), !custom.trimmingCharacters(in: .whitespaces).isEmpty {
