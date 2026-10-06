@@ -61,7 +61,7 @@ This app is the Swift counterpart of the [FinanceTracker](https://github.com/Har
 
 ### Configure API URL
 
-By default the app connects to the deployed cloud API (`http://gbubsjwn1jyklrh2nop8qbum.2.31.5.71.sslip.io`). To change this to local development:
+By default the app connects to the deployed cloud API (`https://gbubsjwn1jyklrh2nop8qbum.2.31.5.71.sslip.io`). To change this to local development:
 
 1. Open the scheme in Xcode → **Edit Scheme → Run → Arguments → Environment Variables**
 2. Add `API_BASE_URL` = `https://your-backend.com`
